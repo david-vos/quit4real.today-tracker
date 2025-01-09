@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	_ "github.com/mattn/go-sqlite3"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -19,7 +18,10 @@ func Connect(dbPath string) (*sql.DB, error) {
 		if err != nil {
 			return nil, err
 		}
-		file.Close()
+		err = file.Close()
+		if err != nil {
+			return nil, err
+		}
 		log.Println("Database file created:", dbPath)
 	}
 
@@ -38,9 +40,8 @@ func Connect(dbPath string) (*sql.DB, error) {
 	return db, nil
 }
 
-// ApplyMigrations applies all migrations in the db/migrations directory
 func ApplyMigrations(db *sql.DB, migrationsPath string) error {
-	files, err := ioutil.ReadDir(migrationsPath)
+	files, err := os.ReadDir(migrationsPath)
 	if err != nil {
 		return fmt.Errorf("failed to read migrations directory: %v", err)
 	}
