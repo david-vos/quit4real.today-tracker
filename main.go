@@ -4,11 +4,14 @@ import (
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"
+	"project/config"
 	"project/db"
 	"project/handlers"
 )
 
 func main() {
+	config.Init()
+
 	dbc := db.Setup()
 	defer func() {
 		err := dbc.Close()

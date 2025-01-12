@@ -1,6 +1,5 @@
 package models
 
-// Define structs to match the JSON response structure
 type Game struct {
 	AppID           int    `json:"appid"`
 	Name            string `json:"name"`

@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"
-	"log"
 	"net/http"
+	"project/config"
 	"project/models"
 	"project/repository"
 )
@@ -23,6 +23,7 @@ func AddUserHandler(db repository.DBExecutor) http.HandlerFunc {
 		// Parse JSON request body
 		err := json.NewDecoder(r.Body).Decode(&user)
 		if err != nil {
+			config.HandleError("Invalid request body", err)
 			http.Error(w, "Invalid request body", http.StatusBadRequest)
 			return
 		}
@@ -31,7 +32,7 @@ func AddUserHandler(db repository.DBExecutor) http.HandlerFunc {
 		err = repository.CreateUser(db, user)
 		if err != nil {
 			http.Error(w, "Failed to create user", http.StatusInternalServerError)
-			log.Printf("Error creating user: %v", err)
+			config.HandleError("Error creating user: %v", err)
 			return
 		}
 
@@ -53,6 +54,7 @@ func AddTrackerHandler(db repository.DBExecutor) http.HandlerFunc {
 
 		err := repository.CreateTracker(db, userID, gameId)
 		if err != nil {
+			config.HandleError("Failed to create user", err)
 			http.Error(w, "Failed to create user", http.StatusInternalServerError)
 		}
 
@@ -76,6 +78,7 @@ func TrackUserHandler(db *sql.DB) http.HandlerFunc {
 		// Retrieve the user from the database
 		tracker, err := repository.GetTracker(db, userID, gameId)
 		if err != nil {
+			config.HandleError("Failed to find user", err)
 			http.Error(w, fmt.Sprintf("Failed to find user with ID %d: %v", tracker, err), http.StatusNotFound)
 			return
 		}
@@ -85,6 +88,7 @@ func TrackUserHandler(db *sql.DB) http.HandlerFunc {
 		fmt.Println(tracker)
 		err = json.NewEncoder(w).Encode(tracker)
 		if err != nil {
+			config.HandleError("Failed to write response", err)
 			http.Error(w, fmt.Sprintf("Failed to write response: %v", err), http.StatusInternalServerError)
 		}
 	}

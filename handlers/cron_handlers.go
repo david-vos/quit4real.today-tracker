@@ -13,66 +13,92 @@ import (
 	"strconv"
 )
 
-func GetSteamApiData(db *sql.DB, steamId string) {
+func closeBody(body io.ReadCloser) {
+	if err := body.Close(); err != nil {
+		config.HandleError("Error closing response body: %v\n", err)
+	}
+}
+
+func fetchSteamApiData(steamId string) (*models.ApiResponse, error) {
 	apiKey := config.GetSteamApiKey()
 	url := fmt.Sprintf("http://api.steampowered.com/IPlayerService/GetRecentlyPlayedGames/v0001/?key=%s&steamid=%s&format=json", apiKey, steamId)
 	resp, err := http.Get(url)
 	if err != nil {
-		fmt.Printf("Error making HTTP request: %v\n", err)
-		return
+		return nil, fmt.Errorf("error making HTTP request: %w", err)
 	}
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
-			fmt.Printf("Error closing response body: %v\n", err)
-		}
-	}(resp.Body)
+	defer closeBody(resp.Body)
 
 	if resp.StatusCode != http.StatusOK {
-		fmt.Printf("HTTP request failed with status: %s\n", resp.Status)
-		return
+		return nil, fmt.Errorf("HTTP request failed with status: %s", resp.Status)
 	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		fmt.Printf("Error reading response body: %v\n", err)
-		return
+		return nil, fmt.Errorf("error reading response body: %w", err)
 	}
 
 	var apiResponse models.ApiResponse
 	if err := json.Unmarshal(body, &apiResponse); err != nil {
-		fmt.Printf("Error parsing JSON: %v\n", err)
-		return
+		return nil, fmt.Errorf("error parsing JSON: %w", err)
 	}
 
+	return &apiResponse, nil
+}
+
+func updateTrackerForGames(db *sql.DB, steamId string,
+	apiResponse *models.ApiResponse) {
 	trackedGamesByUser, err := repository.GetUserTracker(db, steamId)
 	if err != nil {
-		fmt.Printf("Error getting user tracker: %v\n", err)
+		config.HandleError("Error getting user tracker", err)
+		return // Early return on error
 	}
 
-	// main logic
+	// Create a map for quick lookup of tracked game IDs
+	trackedGameMap := make(map[string]models.Tracker)
+	for _, trackedGame := range trackedGamesByUser {
+		trackedGameMap[trackedGame.GameId] = trackedGame
+	}
+
 	for _, game := range apiResponse.Response.Games {
-		for _, value := range trackedGamesByUser {
-			if value.GameId == strconv.Itoa(game.AppID) {
-				// These are now only games that are followed by the User
-				err := repository.UpdateTracker(db, steamId, strconv.Itoa(game.AppID), game.PlaytimeForever)
-				if err != nil {
-					return
-				}
-				if value.PlayedAmount > game.PlaytimeForever {
-					// THis should actually send a post or somehting to someone that will update anything idk yet.
-					fmt.Println("YOU PLAYED THE GAME NO YOU DIE")
-				}
-			}
+		gameID := strconv.Itoa(game.AppID)
+		trackedGame, exists := trackedGameMap[gameID]
+		if !exists {
+			continue // Skip if the game is not tracked
+		}
+
+		// Update the tracker
+		if err := repository.UpdateTracker(db, steamId, gameID,
+			game.PlaytimeForever); err != nil {
+			config.HandleError("Error updating tracker", err)
+			return // Early return on error
+		}
+
+		// Check if the played amount is greater than the current playtime
+		if trackedGame.PlayedAmount > game.PlaytimeForever {
+			fmt.Println("YOU PLAYED THE GAME NO YOU DIE")
+			return // Early return after printing the message
 		}
 	}
 }
 
+func GetSteamApiData(db *sql.DB, steamId string) {
+	apiResponse, err := fetchSteamApiData(steamId)
+	if err != nil {
+		config.HandleError("Failed to fetch Steam API data", err)
+		return
+	}
+
+	updateTrackerForGames(db, steamId, apiResponse)
+}
+
 func updateAndSendNotify(db *sql.DB) {
-	users := repository.GetAllUsers(db)
+	users, err := repository.GetAllUsers(db)
+	if err != nil {
+		config.HandleError("Error getting all users", err)
+		return
+	}
 	for _, user := range users {
 		GetSteamApiData(db, user.SteamId)
-
 	}
 }
 
@@ -83,7 +109,7 @@ func SetupCronJobs(db *sql.DB) {
 		updateAndSendNotify(db)
 	})
 	if err != nil {
-		fmt.Printf("Error adding cron job: %v\n", err)
+		config.HandleError("Error adding cron job", err)
 		return
 	}
 
