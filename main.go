@@ -1,15 +1,14 @@
 package main
 
 import (
-	"fmt"
+	"github.com/gorilla/mux"
 	"log"
+	"net/http"
 	"project/db"
-	"project/models"
-	"project/repository"
+	"project/handlers"
 )
 
 func main() {
-	// Connect to the database
 	dbc := db.Setup()
 	defer func() {
 		err := dbc.Close()
@@ -18,21 +17,15 @@ func main() {
 		}
 	}()
 
-	// Example usage
-	user := models.User{
-		ID:    32,
-		Name:  "John Doe",
-		Email: "john.doe@gmail.com",
-	}
+	handlers.SetupCronJobs(dbc)
 
-	err := repository.CreateUser(dbc, user)
-	if err != nil {
-		log.Fatal(err)
-	}
+	router := mux.NewRouter()
 
-	var users []models.User
-	users = repository.GetAllUsers(dbc)
+	// Define routes
+	router.HandleFunc("/users", handlers.AddUserHandler(dbc)).Methods("POST")
+	router.HandleFunc("/user/{userID}/track/{gameID}", handlers.TrackUserHandler(dbc)).Methods("GET")
+	router.HandleFunc("/user/{userID}/track/{gameID}", handlers.AddTrackerHandler(dbc)).Methods("POST")
 
-	fmt.Println(users)
-	// TODO: Add application logic here
+	log.Println("Server is running on http://localhost:8080")
+	log.Fatal(http.ListenAndServe(":8080", router))
 }
