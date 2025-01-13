@@ -4,19 +4,23 @@ import (
 	"project/models"
 )
 
-func CreateTracker(db DBExecutor, steamId string, gameId string) error {
+type TrackerRepoController struct {
+	DbContr *DatabaseController
+}
+
+func (c *TrackerRepoController) CreateTracker(steamId string, gameId string) error {
 	query := "INSERT INTO user_tracker (steam_id, game_id, played_amount) VALUES (?, ?, ?);"
-	return executeQuery(db, query, steamId, gameId, 0)
+	return c.DbContr.ExecuteQuery(query, steamId, gameId, 0)
 }
 
-func UpdateTracker(db DBExecutor, steamId string, gameId string, playedAmount int) error {
+func (c *TrackerRepoController) UpdateTracker(steamId string, gameId string, playedAmount int) error {
 	query := "UPDATE user_tracker SET played_amount = ? WHERE steam_id = ? AND game_id = ?;"
-	return executeQuery(db, query, playedAmount, steamId, gameId)
+	return c.DbContr.ExecuteQuery(query, playedAmount, steamId, gameId)
 }
 
-func GetTracker(db DBExecutor, steamId string, gameId string) (models.Tracker, error) {
+func (c *TrackerRepoController) GetTracker(steamId string, gameId string) (models.Tracker, error) {
 	query := "SELECT * FROM user_tracker WHERE steam_id = ? AND game_id = ?;"
-	rows, err := fetchRowsWithClose(db, query, steamId, gameId)
+	rows, err := c.DbContr.FetchRowsWithClose(query, steamId, gameId)
 	if err != nil {
 		return models.Tracker{}, err
 	}
@@ -28,9 +32,9 @@ func GetTracker(db DBExecutor, steamId string, gameId string) (models.Tracker, e
 	return models.Tracker{}, nil
 }
 
-func GetUserTracker(db DBExecutor, steamId string) ([]models.Tracker, error) {
+func (c *TrackerRepoController) GetUserTracker(steamId string) ([]models.Tracker, error) {
 	query := "SELECT * FROM user_tracker WHERE steam_id = ?;"
-	rows, err := fetchRowsWithClose(db, query, steamId)
+	rows, err := c.DbContr.FetchRowsWithClose(query, steamId)
 	if err != nil {
 		return nil, err
 	}

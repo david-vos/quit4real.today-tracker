@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"
@@ -11,11 +10,17 @@ import (
 	"project/repository"
 )
 
-// AddUserHandler handles adding a new user
-func AddUserHandler(db repository.DBExecutor) http.HandlerFunc {
+type UserController struct {
+	UserRepoContr    *repository.UserRepoController
+	TrackerRepoContr *repository.TrackerRepoController
+}
+
+// AddUserHandler handles adding a new user in the DataBase
+func (c *UserController) AddUserHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
-			http.Error(w, "Only POST method is allowed", http.StatusMethodNotAllowed)
+			http.Error(w, "Only POST method is allowed",
+				http.StatusMethodNotAllowed)
 			return
 		}
 
@@ -24,14 +29,16 @@ func AddUserHandler(db repository.DBExecutor) http.HandlerFunc {
 		err := json.NewDecoder(r.Body).Decode(&user)
 		if err != nil {
 			config.HandleError("Invalid request body", err)
-			http.Error(w, "Invalid request body", http.StatusBadRequest)
+			http.Error(w, "Invalid request body",
+				http.StatusBadRequest)
 			return
 		}
 
 		// Add the user to the database
-		err = repository.CreateUser(db, user)
+		err = c.UserRepoContr.CreateUser(user)
 		if err != nil {
-			http.Error(w, "Failed to create user", http.StatusInternalServerError)
+			http.Error(w, "Failed to create user",
+				http.StatusInternalServerError)
 			config.HandleError("Error creating user: %v", err)
 			return
 		}
@@ -42,7 +49,7 @@ func AddUserHandler(db repository.DBExecutor) http.HandlerFunc {
 	}
 }
 
-func AddTrackerHandler(db repository.DBExecutor) http.HandlerFunc {
+func (c *UserController) AddTrackerHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		userID, ok := vars["userID"]
@@ -52,7 +59,7 @@ func AddTrackerHandler(db repository.DBExecutor) http.HandlerFunc {
 			return
 		}
 
-		err := repository.CreateTracker(db, userID, gameId)
+		err := c.TrackerRepoContr.CreateTracker(userID, gameId)
 		if err != nil {
 			config.HandleError("Failed to create user", err)
 			http.Error(w, "Failed to create user", http.StatusInternalServerError)
@@ -65,7 +72,7 @@ func AddTrackerHandler(db repository.DBExecutor) http.HandlerFunc {
 }
 
 // TrackUserHandler handles requests for tracking a user by ID
-func TrackUserHandler(db *sql.DB) http.HandlerFunc {
+func (c *UserController) TrackUserHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		userID, ok := vars["userID"]
@@ -76,7 +83,7 @@ func TrackUserHandler(db *sql.DB) http.HandlerFunc {
 		}
 
 		// Retrieve the user from the database
-		tracker, err := repository.GetTracker(db, userID, gameId)
+		tracker, err := c.TrackerRepoContr.GetTracker(userID, gameId)
 		if err != nil {
 			config.HandleError("Failed to find user", err)
 			http.Error(w, fmt.Sprintf("Failed to find user with ID %d: %v", tracker, err), http.StatusNotFound)

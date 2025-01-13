@@ -5,18 +5,21 @@ import (
 	"project/config"
 )
 
-type DBExecutor interface {
-	Exec(query string, args ...interface{}) (sql.Result, error)
-	Query(query string, args ...interface{}) (*sql.Rows, error)
+type DatabaseController struct {
+	DB *sql.DB
 }
 
-func executeQuery(db DBExecutor, query string, args ...interface{}) error {
-	_, err := db.Exec(query, args...)
+func (c *DatabaseController) ExecuteQuery(query string, args ...interface{}) error {
+	_, err := c.DB.Exec(query, args...)
 	return err
 }
 
-func fetchRowsWithClose(db DBExecutor, query string, args ...interface{}) (*sql.Rows, error) {
-	rows, err := db.Query(query, args...)
+func (c *DatabaseController) Query(query string, args ...interface{}) (*sql.Rows, error) {
+	return c.DB.Query(query, args...)
+}
+
+func (c *DatabaseController) FetchRowsWithClose(query string, args ...interface{}) (*sql.Rows, error) {
+	rows, err := c.DB.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}

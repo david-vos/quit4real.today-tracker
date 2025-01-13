@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"github.com/robfig/cron/v3"
@@ -13,13 +12,18 @@ import (
 	"strconv"
 )
 
+type CronController struct {
+	UserRepoContr    *repository.UserRepoController
+	TrackerRepoContr *repository.TrackerRepoController
+}
+
 func closeBody(body io.ReadCloser) {
 	if err := body.Close(); err != nil {
 		config.HandleError("Error closing response body: %v\n", err)
 	}
 }
 
-func fetchSteamApiData(steamId string) (*models.ApiResponse, error) {
+func (c *CronController) fetchSteamApiData(steamId string) (*models.ApiResponse, error) {
 	apiKey := config.GetSteamApiKey()
 	url := fmt.Sprintf("http://api.steampowered.com/IPlayerService/GetRecentlyPlayedGames/v0001/?key=%s&steamid=%s&format=json", apiKey, steamId)
 	resp, err := http.Get(url)
@@ -45,9 +49,8 @@ func fetchSteamApiData(steamId string) (*models.ApiResponse, error) {
 	return &apiResponse, nil
 }
 
-func updateTrackerForGames(db *sql.DB, steamId string,
-	apiResponse *models.ApiResponse) {
-	trackedGamesByUser, err := repository.GetUserTracker(db, steamId)
+func (c *CronController) updateTrackerForGames(steamId string, apiResponse *models.ApiResponse) {
+	trackedGamesByUser, err := c.TrackerRepoContr.GetUserTracker(steamId)
 	if err != nil {
 		config.HandleError("Error getting user tracker", err)
 		return // Early return on error
@@ -67,8 +70,7 @@ func updateTrackerForGames(db *sql.DB, steamId string,
 		}
 
 		// Update the tracker
-		if err := repository.UpdateTracker(db, steamId, gameID,
-			game.PlaytimeForever); err != nil {
+		if err := c.TrackerRepoContr.UpdateTracker(steamId, gameID, game.PlaytimeForever); err != nil {
 			config.HandleError("Error updating tracker", err)
 			return // Early return on error
 		}
@@ -81,38 +83,38 @@ func updateTrackerForGames(db *sql.DB, steamId string,
 	}
 }
 
-func GetSteamApiData(db *sql.DB, steamId string) {
-	apiResponse, err := fetchSteamApiData(steamId)
+func (c *CronController) GetSteamApiData(steamId string) {
+	apiResponse, err := c.fetchSteamApiData(steamId)
 	if err != nil {
 		config.HandleError("Failed to fetch Steam API data", err)
 		return
 	}
 
-	updateTrackerForGames(db, steamId, apiResponse)
+	c.updateTrackerForGames(steamId, apiResponse)
 }
 
-func updateAndSendNotify(db *sql.DB) {
-	users, err := repository.GetAllUsers(db)
+func (c *CronController) updateAndSendNotify() {
+	users, err := c.UserRepoContr.GetAllUsers()
 	if err != nil {
 		config.HandleError("Error getting all users", err)
 		return
 	}
 	for _, user := range users {
-		GetSteamApiData(db, user.SteamId)
+		c.GetSteamApiData(user.SteamId)
 	}
 }
 
-func SetupCronJobs(db *sql.DB) {
-	c := cron.New()
+func (c *CronController) SetupCronJobs() {
+	c.updateAndSendNotify()
 
-	_, err := c.AddFunc("@hourly", func() {
-		updateAndSendNotify(db)
+	cronJob := cron.New()
+	_, err := cronJob.AddFunc("@every 10m", func() {
+		c.updateAndSendNotify()
 	})
 	if err != nil {
 		config.HandleError("Error adding cron job", err)
 		return
 	}
 
-	c.Start()
-	defer c.Stop()
+	cronJob.Start()
 }
