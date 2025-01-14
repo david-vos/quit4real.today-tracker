@@ -68,9 +68,6 @@ func (c *CronController) updateTrackerForGames(steamId string, apiResponse *mode
 		if !exists {
 			continue // Skip if the game is not tracked
 		}
-		fmt.Println(game.Name)
-		fmt.Println(game.PlaytimeForever)
-		fmt.Println(trackedGame.PlayedAmount)
 		// Check if the played amount is greater than the current playtime
 		if game.PlaytimeForever > trackedGame.PlayedAmount {
 			// Update the tracker
@@ -80,7 +77,7 @@ func (c *CronController) updateTrackerForGames(steamId string, apiResponse *mode
 			}
 			fmt.Println("YOU PLAYED THE GAME NO YOU DIE!")
 			//TODO: Save this somewhere in a new database table
-			//TODO: Also send out a notifcation to some extenral service like signal?
+			//TODO: Also send out a notifcation to some extenral service like signal or Discord?
 			return // Early return after printing the message
 		} else {
 			fmt.Println("GOOD JOB YOU DID NOT PLAY THE GAME :)")
