@@ -2,7 +2,7 @@
 db/database.db
 
 config/config.go
-config/app.log
 
+app.log
 output.log
 project
