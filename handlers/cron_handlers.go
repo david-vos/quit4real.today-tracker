@@ -15,6 +15,7 @@ import (
 type CronController struct {
 	UserRepoContr    *repository.UserRepoController
 	TrackerRepoContr *repository.TrackerRepoController
+	FailsContr       *FailsController
 }
 
 func closeBody(body io.ReadCloser) {
@@ -75,12 +76,14 @@ func (c *CronController) updateTrackerForGames(steamId string, apiResponse *mode
 				config.HandleError("Error updating tracker", err)
 				return // Early return on error
 			}
-			fmt.Println("YOU PLAYED THE GAME NO YOU DIE!")
-			//TODO: Save this somewhere in a new database table
-			//TODO: Also send out a notifcation to some extenral service like signal or Discord?
-			return // Early return after printing the message
-		} else {
-			fmt.Println("GOOD JOB YOU DID NOT PLAY THE GAME :)")
+
+			fmt.Println("A fail from User: " + steamId + " playing game " + gameID)
+			err := c.FailsContr.createFail(trackedGame)
+			if err != nil {
+				config.HandleError("Error creating a Fail", err)
+			}
+			//TODO: This should send out a message to another service that lisons to these events kafka 0_o
+			return
 		}
 	}
 }

@@ -19,15 +19,23 @@ func DependencyInit(dbc *sql.DB) (*handlers.UserController, *handlers.CronContro
 	trackerRepoControllerImp := &repository.TrackerRepoController{
 		DbContr: databaseControllerImp,
 	}
+	failedRepoControllerImp := &repository.FailedRepoController{
+		DbContr: databaseControllerImp,
+	}
 
 	// Top layer Controller Definition
 	userHandlerControllerImp := &handlers.UserController{
 		UserRepoContr:    userRepoControllerImp,
 		TrackerRepoContr: trackerRepoControllerImp,
 	}
+	failsController := &handlers.FailsController{
+		FailRepoContr: failedRepoControllerImp,
+		UserRepoContr: userRepoControllerImp,
+	}
 	cronControllerImp := &handlers.CronController{
 		UserRepoContr:    userRepoControllerImp,
 		TrackerRepoContr: trackerRepoControllerImp,
+		FailsContr:       failsController,
 	}
 
 	return userHandlerControllerImp, cronControllerImp
