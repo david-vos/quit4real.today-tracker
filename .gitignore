@@ -5,3 +5,4 @@ config/config.go
 config/app.log
 
 output.log
+project
