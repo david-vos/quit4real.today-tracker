@@ -1,4 +1,7 @@
 .idea
 db/database.db
+
 config/config.go
-config/app.lo
+config/app.log
+
+output.log
