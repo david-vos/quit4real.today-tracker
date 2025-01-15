@@ -19,7 +19,7 @@ func main() {
 			config.HandleError("Failed to close the database: %v", err)
 		}
 	}()
-	userHandlerContrImp, cronContrImp := DependencyInit(dbc)
+	userHandlerContrImp, cronContrImp, failContrImp := DependencyInit(dbc)
 
 	// The cron-job part
 	cronContrImp.SetupCronJobs()
@@ -30,6 +30,8 @@ func main() {
 	router.HandleFunc("/users", userHandlerContrImp.AddUserHandler()).Methods("POST")
 	router.HandleFunc("/user/{userID}/track/{gameID}", userHandlerContrImp.TrackUserHandler()).Methods("GET")
 	router.HandleFunc("/user/{userID}/track/{gameID}", userHandlerContrImp.AddTrackerHandler()).Methods("POST")
+
+	router.HandleFunc("/fail/leaderboard", failContrImp.GetFailsLeaderBoard()).Methods("GET")
 
 	log.Println("Server is running on http://localhost:8080")
 
