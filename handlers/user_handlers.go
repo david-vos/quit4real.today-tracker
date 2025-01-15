@@ -59,6 +59,8 @@ func (c *UserController) AddTrackerHandler() http.HandlerFunc {
 			return
 		}
 
+		// this should query the steam API to set the tracker to  a value instead of 0
+
 		err := c.TrackerRepoContr.CreateTracker(userID, gameId)
 		if err != nil {
 			config.HandleError("Failed to create user", err)
