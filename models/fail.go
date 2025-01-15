@@ -9,7 +9,8 @@ type Fail struct {
 	ID         int       `json:"id"`
 	SteamId    string    `json:"steam_id"`
 	GameId     string    `json:"game_id"`
-	FailedTime time.Time `json:"failed_time"`
+	FailedAt   time.Time `json:"failed_at"`
+	PlayedTime int       `json:"played_time"`
 }
 
 func MapFail(rows *sql.Rows) (Fail, error) {
@@ -18,7 +19,8 @@ func MapFail(rows *sql.Rows) (Fail, error) {
 		&fail.ID,
 		&fail.SteamId,
 		&fail.GameId,
-		&fail.FailedTime,
+		&fail.FailedAt,
+		&fail.PlayedTime,
 	); err != nil {
 		return Fail{}, err
 	}

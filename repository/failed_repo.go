@@ -29,7 +29,7 @@ func (c *FailedRepoController) GetFailsForUser(steamId string) ([]models.Fail, e
 }
 
 func (c *FailedRepoController) CreateFailed(fail models.Fail) error {
-	query := "INSERT INTO failed_games (steam_id, game_id, failed_time) VALUES (?, ?, ?)"
-	err := c.DbContr.ExecuteQuery(query, fail.SteamId, fail.GameId, fail.FailedTime)
+	query := "INSERT INTO failed_games (steam_id, game_id, failed_at, played_time) VALUES (?, ?, ?, ?)"
+	err := c.DbContr.ExecuteQuery(query, fail.SteamId, fail.GameId, fail.FailedAt, fail.PlayedTime)
 	return err
 }

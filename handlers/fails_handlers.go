@@ -19,11 +19,12 @@ func (c *FailsController) GetFails(steamId string) ([]models.Fail, error) {
 	return fails, nil
 }
 
-func (c *FailsController) createFail(tracker models.Tracker) error {
+func (c *FailsController) createFail(tracker models.Tracker, newTime int) error {
 	fail := models.Fail{
 		SteamId:    tracker.SteamId,
 		GameId:     tracker.GameId,
-		FailedTime: time.Now(),
+		FailedAt:   time.Now(),
+		PlayedTime: newTime - tracker.PlayedAmount,
 	}
 	err := c.FailRepoContr.CreateFailed(fail)
 	return err

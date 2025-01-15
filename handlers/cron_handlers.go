@@ -78,7 +78,7 @@ func (c *CronController) updateTrackerForGames(steamId string, apiResponse *mode
 			}
 
 			fmt.Println("A fail from User: " + steamId + " playing game " + gameID)
-			err := c.FailsContr.createFail(trackedGame)
+			err := c.FailsContr.createFail(trackedGame, game.PlaytimeForever)
 			if err != nil {
 				config.HandleError("Error creating a Fail", err)
 			}
@@ -110,10 +110,10 @@ func (c *CronController) updateAndSendNotify() {
 }
 
 func (c *CronController) SetupCronJobs() {
-	c.updateAndSendNotify()
-
 	cronJob := cron.New()
-	_, err := cronJob.AddFunc("@every 2m", func() {
+	// ((24*60)/10)*694 ~= 100.000 the STEAM API limit
+	// 694 -> max amount of users :thinking per API key
+	_, err := cronJob.AddFunc("@every 10m", func() {
 		c.updateAndSendNotify()
 	})
 	if err != nil {
