@@ -70,6 +70,8 @@ func (c *CronController) updateTrackerForGames(steamId string, apiResponse *mode
 			continue // Skip if the game is not tracked
 		}
 		// Check if the played amount is greater than the current playtime
+		// This will always fail on the first iteration when a new user is created it does not actually set the
+		// PlayedAmount in the beginning making it playtimeForever > 0 which is always true
 		if game.PlaytimeForever > trackedGame.PlayedAmount {
 			// Update the tracker
 			if err := c.TrackerRepoContr.UpdateTracker(steamId, gameID, game.PlaytimeForever); err != nil {
