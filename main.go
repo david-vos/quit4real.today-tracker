@@ -5,7 +5,7 @@ import (
 	"log"
 	"net/http"
 	"project/config"
-	"project/db"
+	"project/main/db"
 )
 
 func main() {
