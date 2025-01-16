@@ -15,3 +15,6 @@ ps aux | grep 'go run'
 ```bash
 kill <PID>
 ```
+
+# WIP
+This project is currently stil a WIP. Right now I am bussy with the BE and will soon start working on the FE afther at least steam is added
