@@ -1,4 +1,4 @@
-package models
+package api
 
 type Game struct {
 	AppID           int    `json:"appid"`

@@ -1,4 +1,6 @@
-package handlers
+// TODO: I have to go to sleep so I will handle the cron job part of this later
+
+package api
 
 import (
 	"encoding/json"
@@ -7,7 +9,7 @@ import (
 	"io"
 	"net/http"
 	"project/config"
-	"project/models"
+	"project/main/model"
 	"project/repository"
 	"strconv"
 )
@@ -24,7 +26,7 @@ func closeBody(body io.ReadCloser) {
 	}
 }
 
-func (c *CronController) fetchSteamApiData(steamId string) (*models.ApiResponse, error) {
+func (c *CronController) fetchSteamApiData(steamId string) (*ApiResponse, error) {
 	apiKey := config.GetSteamApiKey()
 	url := fmt.Sprintf("http://api.steampowered.com/IPlayerService/GetRecentlyPlayedGames/v0001/?key=%s&steamid=%s&format=json", apiKey, steamId)
 	resp, err := http.Get(url)
@@ -42,7 +44,7 @@ func (c *CronController) fetchSteamApiData(steamId string) (*models.ApiResponse,
 		return nil, fmt.Errorf("error reading response body: %w", err)
 	}
 
-	var apiResponse models.ApiResponse
+	var apiResponse ApiResponse
 	if err := json.Unmarshal(body, &apiResponse); err != nil {
 		return nil, fmt.Errorf("error parsing JSON: %w", err)
 	}
@@ -50,7 +52,7 @@ func (c *CronController) fetchSteamApiData(steamId string) (*models.ApiResponse,
 	return &apiResponse, nil
 }
 
-func (c *CronController) updateTrackerForGames(steamId string, apiResponse *models.ApiResponse) {
+func (c *CronController) updateTrackerForGames(steamId string, apiResponse *ApiResponse) {
 	trackedGamesByUser, err := c.TrackerRepoContr.GetUserTracker(steamId)
 	if err != nil {
 		config.HandleError("Error getting user tracker", err)
@@ -58,7 +60,7 @@ func (c *CronController) updateTrackerForGames(steamId string, apiResponse *mode
 	}
 
 	// Create a map for quick lookup of tracked game IDs
-	trackedGameMap := make(map[string]models.Tracker)
+	trackedGameMap := make(map[string]model.Tracker)
 	for _, trackedGame := range trackedGamesByUser {
 		trackedGameMap[trackedGame.GameId] = trackedGame
 	}

@@ -3,11 +3,12 @@ package main
 import (
 	"database/sql"
 	"project/handlers"
+	"project/main/api"
 	"project/repository"
 )
 
 // DependencyInit initializes the UserController with the necessary dependencies.
-func DependencyInit(dbc *sql.DB) (*handlers.UserController, *handlers.CronController, *handlers.FailsController) {
+func DependencyInit(dbc *sql.DB) (*handlers.UserController, *api.CronController, *handlers.FailsController) {
 	//Database Layer Controller definition
 	databaseControllerImp := &repository.DatabaseController{
 		DB: dbc,
@@ -32,7 +33,7 @@ func DependencyInit(dbc *sql.DB) (*handlers.UserController, *handlers.CronContro
 		FailRepoContr: failedRepoControllerImp,
 		UserRepoContr: userRepoControllerImp,
 	}
-	cronControllerImp := &handlers.CronController{
+	cronControllerImp := &api.CronController{
 		UserRepoContr:    userRepoControllerImp,
 		TrackerRepoContr: trackerRepoControllerImp,
 		FailsContr:       failsController,

@@ -6,5 +6,6 @@ func GetDBPath() string {
 func GetSteamApiKey() string {
 	return "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 }
-
-func GetLogLevel() string { return "debug" }
+func InitLogger() {
+	logger.InitLogger()
+}

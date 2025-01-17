@@ -1,16 +1,40 @@
 package endpoint
 
 import (
+	"encoding/json"
 	"github.com/gorilla/mux"
+	"net/http"
 	"project/logger"
+	"project/main/handler/query"
 )
 
 type FailEndpoint struct {
-	Router *mux.Router
+	Router           *mux.Router
+	FailQueryHandler *query.FailQueryHandler
 }
 
-func (f *FailEndpoint) Fail() {
+func (endpoint *FailEndpoint) Fail() {
 	logger.Info("Trying to start fail endpoint")
-	f.Router.HandleFunc("/fail/leaderboard").Methods("GET")
+	endpoint.Router.HandleFunc("/fail/leaderboard", endpoint.getLeaderboard()).Methods("GET")
 	logger.Info("Fail endpoint started")
+}
+
+func (endpoint *FailEndpoint) getLeaderboard() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		failsLeaderBoard, err := endpoint.FailQueryHandler.GetLeaderBoard()
+		if err != nil {
+			logger.Fail(err.Error())
+			w.WriteHeader(http.StatusInternalServerError)
+			return // Ensure to return after writing the header
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+
+		if err := json.NewEncoder(w).Encode(failsLeaderBoard); err != nil {
+			logger.Fail(err.Error())
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+	}
 }
