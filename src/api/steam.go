@@ -53,7 +53,6 @@ func closeBody(body io.ReadCloser) {
 }
 
 func (api *SteamApi) GetOnlyFailed(
-	steamId string,
 	apiResponse *model.SteamApiResponse,
 	trackedGamesByUser []model.Tracker,
 ) []MatchedDbGameToSteamGameInfo {

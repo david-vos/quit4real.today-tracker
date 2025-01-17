@@ -33,7 +33,7 @@ func (handler *TrackerCommandHandler) UpdateFromSteamApi(steamId string) {
 		return
 	}
 
-	failedGames := handler.SteamApi.GetOnlyFailed(steamId, apiResponse, trackedGamesByUser)
+	failedGames := handler.SteamApi.GetOnlyFailed(apiResponse, trackedGamesByUser)
 
 	for _, failInfo := range failedGames {
 		// Update tracker repository
