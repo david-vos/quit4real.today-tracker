@@ -22,8 +22,9 @@ func StartApp() {
 	}()
 	logger.Info("Successfully started DB connection")
 
-	// TODO: setup a way to init the dependency injections
+	logger.Info("Starting the dependency init")
 	var app *App = AppInit(dataBaseConnection)
+	logger.Info("Successfully started dependency init")
 
 	// Setup http server
 	logger.Info("Starting http server")
@@ -31,6 +32,8 @@ func StartApp() {
 	logger.Info("Successfully initialized the http server")
 
 	logger.Info("Starting the cronJobs")
+	app.Jobs.StartAll()
+	logger.Info("Successfully started cronJobs")
 
 	select {}
 }

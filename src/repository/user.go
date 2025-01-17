@@ -7,12 +7,12 @@ import (
 )
 
 type UserRepository struct {
-	DatabaseImp *DatabaseImpl
+	DatabaseImpl *DatabaseImpl
 }
 
 func (repository *UserRepository) GetAll() ([]model.User, error) {
 	query := `SELECT * FROM users;`
-	rows, err := repository.DatabaseImp.FetchRows(query)
+	rows, err := repository.DatabaseImpl.FetchRows(query)
 	if err != nil {
 		return nil, err
 	}
@@ -37,6 +37,6 @@ func (repository *UserRepository) GetAll() ([]model.User, error) {
 
 func (repository *UserRepository) Add(user model.User) error {
 	query := "INSERT INTO users (id, name, steam_id, api_key) VALUES (?, ?, ?, ?)"
-	err := repository.DatabaseImp.ExecuteQuery(query, user.ID, user.Name, user.SteamId, user.ApiKey)
+	err := repository.DatabaseImpl.ExecuteQuery(query, user.ID, user.Name, user.SteamId, user.ApiKey)
 	return err
 }

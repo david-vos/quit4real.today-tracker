@@ -29,7 +29,7 @@ func (handler *TrackerCommandHandler) UpdateFromSteamApi(steamId string) {
 
 	trackedGamesByUser, err := handler.TrackerRepository.GetAll(steamId)
 	if err != nil {
-		logger.Fail("failed get all tracked games for player: " + steamId)
+		logger.Fail("failed get all tracked games for player: " + steamId + " | ERROR: " + err.Error())
 		return
 	}
 
@@ -38,14 +38,14 @@ func (handler *TrackerCommandHandler) UpdateFromSteamApi(steamId string) {
 	for _, failInfo := range failedGames {
 		// Update tracker repository
 		if err := handler.TrackerRepository.Update(steamId, failInfo.DbTrack.GameId, failInfo.SteamApiGame.PlaytimeForever); err != nil {
-			logger.Fail("Error updating tracker: " + err.Error())
+			logger.Fail("Error updating tracker for user: " + steamId + " | ERROR: " + err.Error())
 			return
 		}
 		logger.Info("A fail from User: " + steamId + " playing game " + failInfo.DbTrack.GameId)
 
 		err := handler.FailsCommandHandler.Add(failInfo.DbTrack, failInfo.SteamApiGame.PlaytimeForever)
 		if err != nil {
-			logger.Fail("Error creating a Fail: " + err.Error())
+			logger.Fail("Error creating a Fail: " + steamId + " | ERROR: " + err.Error())
 		}
 	}
 }

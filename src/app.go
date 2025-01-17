@@ -39,91 +39,74 @@ type Repositories struct {
 }
 
 func AppInit(dataBaseConnection *sql.DB) *App {
-	var app = App{}
-	databaseImpl := repository.DatabaseImpl{DB: dataBaseConnection}
-	repositories := createRepositories(app)
-	commandHandler := createCommandHandlers(app)
-	queryHandler := createQueryHandlers(app)
-	jobs := createJobs(app)
+	databaseImpl := &repository.DatabaseImpl{DB: dataBaseConnection}
+	repositories := createRepositories(databaseImpl)
+	commandHandlers := createCommandHandlers(repositories)
+	queryHandlers := createQueryHandlers(repositories)
+	jobs := createJobs(queryHandlers, commandHandlers)
 	steamApi := createSteamApi()
-	endpoints := createEndpoints(app)
+	endpoints := createEndpoints(commandHandlers, queryHandlers)
 
-	app.DatabaseImpl = &databaseImpl
-	app.Repositories = &repositories
-	app.CommandHandlers = &commandHandler
-	app.QueryHandlers = &queryHandler
-	app.Jobs = &jobs
-	app.SteamApi = &steamApi
-	app.Endpoints = &endpoints
-	return &app
-}
-
-func createRepositories(app App) Repositories {
-	trackerRepo := repository.TrackerRepository{DatabaseImpl: app.DatabaseImpl}
-	userRepo := repository.UserRepository{DatabaseImp: app.DatabaseImpl}
-	failRepo := repository.FailRepository{DatabaseImpl: app.DatabaseImpl}
-
-	return Repositories{
-		TrackerRepository: &trackerRepo,
-		UserRepository:    &userRepo,
-		FailRepository:    &failRepo,
+	return &App{
+		DatabaseImpl:    databaseImpl,
+		Repositories:    repositories,
+		CommandHandlers: commandHandlers,
+		QueryHandlers:   queryHandlers,
+		Jobs:            jobs,
+		SteamApi:        steamApi,
+		Endpoints:       endpoints,
 	}
 }
 
-func createCommandHandlers(app App) CommandHandlers {
-	failCommandHandler := command.FailsCommandHandler{FailRepository: app.Repositories.FailRepository}
-	trackerCommandHandler := command.TrackerCommandHandler{TrackerRepository: app.Repositories.TrackerRepository}
-	userCommandHandler := command.UserCommandHandler{UserRepository: app.Repositories.UserRepository}
-
-	return CommandHandlers{
-		FailsCommandHandler:   &failCommandHandler,
-		TrackerCommandHandler: &trackerCommandHandler,
-		UserCommandHandler:    &userCommandHandler,
+func createRepositories(databaseImpl *repository.DatabaseImpl) *Repositories {
+	return &Repositories{
+		TrackerRepository: &repository.TrackerRepository{DatabaseImpl: databaseImpl},
+		UserRepository:    &repository.UserRepository{DatabaseImpl: databaseImpl},
+		FailRepository:    &repository.FailRepository{DatabaseImpl: databaseImpl},
 	}
 }
 
-func createQueryHandlers(app App) QueryHandlers {
-	failQueryHandler := query.FailQueryHandler{FailRepository: app.Repositories.FailRepository}
-	userQueryHandler := query.UserQueryHandler{UserRepository: app.Repositories.UserRepository}
-
-	return QueryHandlers{
-		FailsQueryHandler: &failQueryHandler,
-		UserQueryHandler:  &userQueryHandler,
+func createCommandHandlers(repositories *Repositories) *CommandHandlers {
+	return &CommandHandlers{
+		FailsCommandHandler:   &command.FailsCommandHandler{FailRepository: repositories.FailRepository},
+		TrackerCommandHandler: &command.TrackerCommandHandler{TrackerRepository: repositories.TrackerRepository},
+		UserCommandHandler:    &command.UserCommandHandler{UserRepository: repositories.UserRepository},
 	}
 }
 
-func createJobs(app App) cron.Jobs {
-	failCron := cron.FailCron{
-		UserQueryHandler:      app.QueryHandlers.UserQueryHandler,
-		TrackerCommandHandler: app.CommandHandlers.TrackerCommandHandler,
-	}
-
-	return cron.Jobs{
-		FailCron: &failCron,
+func createQueryHandlers(repositories *Repositories) *QueryHandlers {
+	return &QueryHandlers{
+		FailsQueryHandler: &query.FailQueryHandler{FailRepository: repositories.FailRepository},
+		UserQueryHandler:  &query.UserQueryHandler{UserRepository: repositories.UserRepository},
 	}
 }
 
-func createSteamApi() api.SteamApi {
-	return api.SteamApi{}
+func createJobs(queryHandlers *QueryHandlers, commandHandlers *CommandHandlers) *cron.Jobs {
+	return &cron.Jobs{
+		FailCron: &cron.FailCron{
+			UserQueryHandler:      queryHandlers.UserQueryHandler,
+			TrackerCommandHandler: commandHandlers.TrackerCommandHandler,
+		},
+	}
 }
 
-func createEndpoints(app App) endpoint.Endpoints {
+func createSteamApi() *api.SteamApi {
+	return &api.SteamApi{}
+}
+
+func createEndpoints(commandHandlers *CommandHandlers, queryHandlers *QueryHandlers) *endpoint.Endpoints {
 	router := mux.NewRouter()
 
-	userEndpoint := endpoint.UserEndpoint{
-		Router:                router,
-		UserCommandHandler:    app.CommandHandlers.UserCommandHandler,
-		TrackerCommandHandler: app.CommandHandlers.TrackerCommandHandler,
-	}
-
-	failEndpoint := endpoint.FailEndpoint{
-		Router:           router,
-		FailQueryHandler: app.QueryHandlers.FailsQueryHandler,
-	}
-
-	return endpoint.Endpoints{
-		Router:       router,
-		UserEndpoint: &userEndpoint,
-		FailEndpoint: &failEndpoint,
+	return &endpoint.Endpoints{
+		Router: mux.NewRouter(),
+		UserEndpoint: &endpoint.UserEndpoint{
+			Router:                router,
+			UserCommandHandler:    commandHandlers.UserCommandHandler,
+			TrackerCommandHandler: commandHandlers.TrackerCommandHandler,
+		},
+		FailEndpoint: &endpoint.FailEndpoint{
+			Router:           router,
+			FailQueryHandler: queryHandlers.FailsQueryHandler,
+		},
 	}
 }
