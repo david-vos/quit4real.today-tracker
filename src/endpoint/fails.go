@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"github.com/gorilla/mux"
 	"net/http"
-	"project/logger"
-	"project/main/handler/query"
+	"quit4real.today/logger"
+	"quit4real.today/src/handler/query"
 )
 
 type FailEndpoint struct {

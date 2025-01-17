@@ -1,15 +1,13 @@
-package main
+package src
 
 import (
-	"project/config"
-	"project/logger"
-	"project/main/db"
-	"project/main/endpoint"
+	"quit4real.today/config"
+	"quit4real.today/logger"
+	"quit4real.today/src/db"
+	"quit4real.today/src/endpoint"
 )
 
-func main() {
-	// Setup logger for error handling
-	logger.Info("Starting the logger")
+func StartApp() {
 	config.InitLogger()
 	logger.Info("Successfully initialized the logger")
 
@@ -31,6 +29,8 @@ func main() {
 	logger.Info("Starting http server")
 	endpoint.Init(app.Endpoints)
 	logger.Info("Successfully initialized the http server")
+
+	logger.Info("Starting the cronJobs")
 
 	select {}
 }

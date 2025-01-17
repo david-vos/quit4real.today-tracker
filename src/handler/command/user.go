@@ -1,16 +1,16 @@
 package command
 
 import (
-	"project/main/model"
-	"project/main/repository"
+	"quit4real.today/src/model"
+	"quit4real.today/src/repository"
 )
 
 type UserCommandHandler struct {
-	userRepository *repository.UserRepository
+	UserRepository *repository.UserRepository
 }
 
 func (handler *UserCommandHandler) Add(user model.User) error {
-	var err = handler.userRepository.Add(user)
+	var err = handler.UserRepository.Add(user)
 	if err != nil {
 		return err
 	}

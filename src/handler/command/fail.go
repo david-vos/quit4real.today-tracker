@@ -1,13 +1,13 @@
 package command
 
 import (
-	"project/main/model"
-	"project/main/repository"
+	"quit4real.today/src/model"
+	"quit4real.today/src/repository"
 	"time"
 )
 
 type FailsCommandHandler struct {
-	failRepository *repository.FailRepository
+	FailRepository *repository.FailRepository
 }
 
 func (handler *FailsCommandHandler) Add(tracker model.Tracker, newTime int) error {
@@ -17,6 +17,6 @@ func (handler *FailsCommandHandler) Add(tracker model.Tracker, newTime int) erro
 		FailedAt:   time.Now(),
 		PlayedTime: newTime - tracker.PlayedAmount,
 	}
-	err := handler.failRepository.Add(fail)
+	err := handler.FailRepository.Add(fail)
 	return err
 }

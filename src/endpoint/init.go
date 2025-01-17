@@ -3,7 +3,7 @@ package endpoint
 import (
 	"github.com/gorilla/mux"
 	"net/http"
-	"project/logger"
+	"quit4real.today/logger"
 )
 
 type Endpoints struct {

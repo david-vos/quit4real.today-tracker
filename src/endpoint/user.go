@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"github.com/gorilla/mux"
 	"net/http"
-	"project/logger"
-	"project/main/handler/command"
-	"project/main/model"
+	"quit4real.today/logger"
+	"quit4real.today/src/handler/command"
+	"quit4real.today/src/model"
 )
 
 type UserEndpoint struct {

@@ -1,8 +1,8 @@
 package query
 
 import (
-	"project/main/model"
-	"project/main/repository"
+	"quit4real.today/src/model"
+	"quit4real.today/src/repository"
 )
 
 type FailQueryHandler struct {

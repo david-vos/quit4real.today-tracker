@@ -3,8 +3,8 @@ package repository
 import (
 	"database/sql"
 	"fmt"
-	"project/logger"
-	"project/main/model"
+	"quit4real.today/logger"
+	"quit4real.today/src/model"
 )
 
 type FailRepository struct {

@@ -7,7 +7,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"project/config"
+	"quit4real.today/config"
 	"sort"
 )
 
