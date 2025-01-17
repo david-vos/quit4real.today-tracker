@@ -7,7 +7,8 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"project/config"
+	"quit4real.today/config"
+	"quit4real.today/logger"
 	"sort"
 )
 
@@ -22,7 +23,7 @@ func Connect(dbPath string) (*sql.DB, error) {
 		if err != nil {
 			return nil, err
 		}
-		log.Println("Database file created:", dbPath)
+		logger.Debug("Database file created:" + dbPath)
 	}
 
 	// Connect to SQLite
@@ -36,7 +37,7 @@ func Connect(dbPath string) (*sql.DB, error) {
 		return nil, err
 	}
 
-	log.Println("Database connected successfully")
+	logger.Debug("Database connected successfully")
 	return db, nil
 }
 
@@ -76,13 +77,13 @@ func ApplyMigrations(db *sql.DB, migrationsPath string) error {
 func Setup() *sql.DB {
 	database, err := Connect(config.GetDBPath())
 	if err != nil {
-		log.Fatalf("Failed to connect to the database: %v", err)
+		logger.Fail("Failed to connect to the database: " + err.Error())
 	}
 
 	// Apply migrations
-	err = ApplyMigrations(database, "db/migrations")
+	err = ApplyMigrations(database, config.GetDBMigrationPath())
 	if err != nil {
-		log.Fatalf("Failed to apply migrations: %v", err)
+		logger.Fail("Failed to apply migrations: " + err.Error())
 	}
 
 	return database

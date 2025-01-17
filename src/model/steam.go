@@ -1,6 +1,6 @@
-package models
+package model
 
-type Game struct {
+type SteamGame struct {
 	AppID           int    `json:"appid"`
 	Name            string `json:"name"`
 	Playtime2Weeks  int    `json:"playtime_2weeks"`
@@ -8,11 +8,11 @@ type Game struct {
 	ImgIconURL      string `json:"img_icon_url"`
 }
 
-type Response struct {
-	TotalCount int    `json:"total_count"`
-	Games      []Game `json:"games"`
+type SteamResponse struct {
+	TotalCount int         `json:"total_count"`
+	Games      []SteamGame `json:"games"`
 }
 
-type ApiResponse struct {
-	Response Response `json:"response"`
+type SteamApiResponse struct {
+	Response SteamResponse `json:"response"`
 }
