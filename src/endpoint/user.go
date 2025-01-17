@@ -24,6 +24,7 @@ func (endpoint *UserEndpoint) User() {
 
 func (endpoint *UserEndpoint) AddUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		logger.Info("Got request to add a new user")
 		if r.Method != http.MethodPost {
 			logger.Debug("Not a POST request")
 			http.Error(w, "Only POST method is allowed",
@@ -58,6 +59,7 @@ func (endpoint *UserEndpoint) AddUser() http.HandlerFunc {
 
 func (endpoint *UserEndpoint) AddTracker() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		logger.Info("Got request to add a new tracker")
 		vars := mux.Vars(r)
 		userID, ok := vars["userID"]
 		gameId, ok := vars["gameID"]

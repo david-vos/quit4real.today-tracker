@@ -11,6 +11,7 @@ import (
 	"quit4real.today/src/repository"
 )
 
+// App represents the main application structure.
 type App struct {
 	DatabaseImpl    *repository.DatabaseImpl
 	Endpoints       *endpoint.Endpoints
@@ -21,30 +22,34 @@ type App struct {
 	SteamApi        *api.SteamApi
 }
 
+// CommandHandlers holds all command handlers.
 type CommandHandlers struct {
 	FailsCommandHandler   *command.FailsCommandHandler
 	TrackerCommandHandler *command.TrackerCommandHandler
 	UserCommandHandler    *command.UserCommandHandler
 }
 
+// QueryHandlers holds all query handlers.
 type QueryHandlers struct {
 	FailsQueryHandler *query.FailQueryHandler
 	UserQueryHandler  *query.UserQueryHandler
 }
 
+// Repositories holds all repositories.
 type Repositories struct {
 	FailRepository    *repository.FailRepository
 	UserRepository    *repository.UserRepository
 	TrackerRepository *repository.TrackerRepository
 }
 
+// AppInit initializes the application with the provided database connection.
 func AppInit(dataBaseConnection *sql.DB) *App {
 	databaseImpl := &repository.DatabaseImpl{DB: dataBaseConnection}
 	repositories := createRepositories(databaseImpl)
-	commandHandlers := createCommandHandlers(repositories)
+	steamApi := createSteamApi()
+	commandHandlers := createCommandHandlers(repositories, steamApi)
 	queryHandlers := createQueryHandlers(repositories)
 	jobs := createJobs(queryHandlers, commandHandlers)
-	steamApi := createSteamApi()
 	endpoints := createEndpoints(commandHandlers, queryHandlers)
 
 	return &App{
@@ -66,10 +71,17 @@ func createRepositories(databaseImpl *repository.DatabaseImpl) *Repositories {
 	}
 }
 
-func createCommandHandlers(repositories *Repositories) *CommandHandlers {
+func createCommandHandlers(repositories *Repositories, steamApi *api.SteamApi) *CommandHandlers {
+	failsHandler := &command.FailsCommandHandler{FailRepository: repositories.FailRepository}
+	trackerCommandHandler := &command.TrackerCommandHandler{
+		SteamApi:            steamApi,
+		TrackerRepository:   repositories.TrackerRepository,
+		FailsCommandHandler: failsHandler,
+	}
+
 	return &CommandHandlers{
-		FailsCommandHandler:   &command.FailsCommandHandler{FailRepository: repositories.FailRepository},
-		TrackerCommandHandler: &command.TrackerCommandHandler{TrackerRepository: repositories.TrackerRepository},
+		FailsCommandHandler:   failsHandler,
+		TrackerCommandHandler: trackerCommandHandler,
 		UserCommandHandler:    &command.UserCommandHandler{UserRepository: repositories.UserRepository},
 	}
 }
@@ -82,6 +94,7 @@ func createQueryHandlers(repositories *Repositories) *QueryHandlers {
 }
 
 func createJobs(queryHandlers *QueryHandlers, commandHandlers *CommandHandlers) *cron.Jobs {
+
 	return &cron.Jobs{
 		FailCron: &cron.FailCron{
 			UserQueryHandler:      queryHandlers.UserQueryHandler,
@@ -98,7 +111,7 @@ func createEndpoints(commandHandlers *CommandHandlers, queryHandlers *QueryHandl
 	router := mux.NewRouter()
 
 	return &endpoint.Endpoints{
-		Router: mux.NewRouter(),
+		Router: router,
 		UserEndpoint: &endpoint.UserEndpoint{
 			Router:                router,
 			UserCommandHandler:    commandHandlers.UserCommandHandler,

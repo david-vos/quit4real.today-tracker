@@ -21,6 +21,7 @@ func (endpoint *FailEndpoint) Fail() {
 
 func (endpoint *FailEndpoint) getLeaderboard() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		logger.Info("Getting leaderboard for this endpoint")
 		failsLeaderBoard, err := endpoint.FailQueryHandler.GetLeaderBoard()
 		if err != nil {
 			logger.Fail(err.Error())

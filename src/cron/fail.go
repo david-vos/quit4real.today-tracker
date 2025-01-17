@@ -17,7 +17,7 @@ func (fc *FailCron) Start() {
 	cronJob := cron.New()
 	// ((24*60)/10)*694 ~= 100.000 the STEAM API limit
 	// 694 -> max amount of users :thinking per API key
-	_, err := cronJob.AddFunc("@every 10m", func() {
+	_, err := cronJob.AddFunc("@every 1m", func() {
 		fc.updateAndSendNotify()
 	})
 	if err != nil {

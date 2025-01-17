@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"io"
 	"log"
 	"os"
 	"runtime"
@@ -20,16 +21,25 @@ const (
 type CustomLogger struct {
 	logger *log.Logger
 	level  LogLevel
+	file   *os.File
 }
 
 // Logger is the global logger instance
 var Logger *CustomLogger
 
 // NewCustomLogger creates a new CustomLogger with the specified log level.
-func NewCustomLogger(level LogLevel) *CustomLogger {
+func NewCustomLogger(level LogLevel, logFile string) *CustomLogger {
+	file, err := os.OpenFile(logFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatalf("error opening log file: %v", err)
+	}
+
+	multiWriter := io.MultiWriter(os.Stdout, file)
+
 	return &CustomLogger{
-		logger: log.New(os.Stdout, "", log.Ldate|log.Ltime|log.Lshortfile),
+		logger: log.New(multiWriter, "", log.Ldate|log.Ltime|log.Lshortfile),
 		level:  level,
+		file:   file,
 	}
 }
 
@@ -47,9 +57,9 @@ func LogLevelFromEnv() LogLevel {
 }
 
 // InitLogger initializes the global logger
-func InitLogger() {
+func InitLogger(logFile string) {
 	logLevel := LogLevelFromEnv()
-	Logger = NewCustomLogger(logLevel)
+	Logger = NewCustomLogger(logLevel, logFile)
 }
 
 // Debug logs a debug message
@@ -88,4 +98,14 @@ func captureStackTrace() string {
 	stack := make([]byte, 1024)
 	n := runtime.Stack(stack, true)
 	return string(stack[:n])
+}
+
+// Close closes the log file if it is open.
+func (l *CustomLogger) Close() {
+	if l.file != nil {
+		err := l.file.Close()
+		if err != nil {
+			return
+		}
+	}
 }
