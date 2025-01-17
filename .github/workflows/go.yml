@@ -2,9 +2,9 @@ name: Go
 
 on:
   push:
-    branches: [ "src" ]
+    branches: [ "main" ]
   pull_request:
-    branches: [ "src" ]
+    branches: [ "main" ]
 
 jobs:
   build:
@@ -21,4 +21,4 @@ jobs:
         run: mv config/.example.config.go config/config.go
 
       - name: Build
-        run: go build -v
+        run: go build
