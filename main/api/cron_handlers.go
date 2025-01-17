@@ -1,5 +1,6 @@
 // TODO: I have to go to sleep so I will handle the cron job part of this later
-
+// These should not be under API, instead I think these should be under event. Events being extranal to and service
+// outside of this app
 package api
 
 import (
@@ -20,39 +21,7 @@ type CronController struct {
 	FailsContr       *FailsController
 }
 
-func closeBody(body io.ReadCloser) {
-	if err := body.Close(); err != nil {
-		config.HandleError("Error closing response body: %v\n", err)
-	}
-}
-
-func (c *CronController) fetchSteamApiData(steamId string) (*ApiResponse, error) {
-	apiKey := config.GetSteamApiKey()
-	url := fmt.Sprintf("http://api.steampowered.com/IPlayerService/GetRecentlyPlayedGames/v0001/?key=%s&steamid=%s&format=json", apiKey, steamId)
-	resp, err := http.Get(url)
-	if err != nil {
-		return nil, fmt.Errorf("error making HTTP request: %w", err)
-	}
-	defer closeBody(resp.Body)
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("HTTP request failed with status: %s", resp.Status)
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("error reading response body: %w", err)
-	}
-
-	var apiResponse ApiResponse
-	if err := json.Unmarshal(body, &apiResponse); err != nil {
-		return nil, fmt.Errorf("error parsing JSON: %w", err)
-	}
-
-	return &apiResponse, nil
-}
-
-func (c *CronController) updateTrackerForGames(steamId string, apiResponse *ApiResponse) {
+func (c *CronController) updateTrackerForGames(steamId string, apiResponse *model.ApiResponse) {
 	trackedGamesByUser, err := c.TrackerRepoContr.GetUserTracker(steamId)
 	if err != nil {
 		config.HandleError("Error getting user tracker", err)
