@@ -2,19 +2,21 @@
 This project is the backend for https://Quit4Real.today
 The goal is simple. Track a user to see *If* they play a game they said they would not.
 
+#Suggestions
+If you have any suggestions dont be scared to create an issue/PR. Ill be looking around at other systems to support in a bit.
+Right now steam will be the main priority but I would like riot ( but there api keys suck ) and Blizzard. I have yet to look into Ubisoft and Xbox :eyes:
+
 # Setup
 ```bash
 cp config/.example.config.go config/config.go
-go build
-nohup go run project > output.log 2>&1 &
-```
-**Close the BE**
-```bash
-ps aux | grep 'go run'
-```
-```bash
-kill <PID>
+go build -v
+go run quit4real.today
 ```
 
-# WIP
-This project is currently stil a WIP. Right now I am bussy with the BE and will soon start working on the FE afther at least steam is added
+# VERY BETA
+This project is currently stil a WIP.
+Everything is currently subject to change. That includes the data design and reponse types
+Right now I am bussy with the BE and will soon start working on the FE afther at least steam is added.
+
+# Help me
+If you want to help me just create a issue or PR. Dont be shy I dont bite
