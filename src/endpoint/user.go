@@ -70,8 +70,9 @@ func (endpoint *UserEndpoint) AddTracker() http.HandlerFunc {
 
 		err := endpoint.TrackerCommandHandler.Add(userID, gameId)
 		if err != nil {
-			logger.Debug("Failed to add Tracker" + err.Error())
+			logger.Debug("Failed to add Tracker: " + err.Error())
 			http.Error(w, "Failed to add tracker", http.StatusInternalServerError)
+			return
 		}
 
 		w.WriteHeader(http.StatusCreated)

@@ -20,29 +20,34 @@ type MatchedDbGameToSteamGameInfo struct {
 	failed       bool
 }
 
-func (api *SteamApi) FetchApiGamesPlayer(steamId string) (model.SteamAPIAllResponse, error) {
+func (api *SteamApi) FetchApiGamesPlayer(steamId string) (*model.SteamAPIAllResponse, error) {
 	apiKey := config.GetSteamApiKey()
 	url := fmt.Sprintf("http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key=%s&steamid=%s&format=json", apiKey, steamId)
 	body, err := api.getAndValidateRequest(url)
 	if err != nil {
-		return model.SteamAPIAllResponse{}, err
+		return nil, err
 	}
 
-	var apiResponse model.SteamAPIAllResponse
-	if err := json.Unmarshal(body, &apiResponse); err != nil {
-		return model.SteamAPIAllResponse{}, fmt.Errorf("error unmarshalling JSON: %w", err)
+	var apiResponse model.SteamAPIResponseAllGames
+	if err = json.Unmarshal(body, &apiResponse); err != nil {
+		return nil, fmt.Errorf("error unmarshalling JSON: %w", err)
 	}
 
-	return apiResponse, nil
+	return &apiResponse.Response, nil
 }
 
 func (api *SteamApi) GetRequestedGamePlayedTime(steamId string, gameId string) (int, error) {
 	apiResponse, err := api.FetchApiGamesPlayer(steamId)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("error fetching steam api response: %w", err)
 	}
-
+	if apiResponse.GameCount <= 0 {
+		return 0, fmt.Errorf("it seems you don't own any games")
+	}
 	gameIdInt, err := strconv.Atoi(gameId)
+	if err != nil {
+		return 0, fmt.Errorf("cannot convert game id to int: %w", err)
+	}
 	for _, game := range apiResponse.Games {
 		if gameIdInt != game.AppID {
 			continue // early return to only handle the game that is requested
