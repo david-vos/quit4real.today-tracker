@@ -2,7 +2,7 @@
 This project is the backend for https://Quit4Real.today
 The goal is simple. Track a user to see *If* they play a game they said they would not.
 
-#Suggestions
+# Suggestions
 If you have any suggestions dont be scared to create an issue/PR. Ill be looking around at other systems to support in a bit.
 Right now steam will be the main priority but I would like riot ( but there api keys suck ) and Blizzard. I have yet to look into Ubisoft and Xbox :eyes:
 
