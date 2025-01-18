@@ -10,9 +10,9 @@ type TrackerRepository struct {
 	DatabaseImpl *DatabaseImpl
 }
 
-func (repository *TrackerRepository) Add(steamId string, gameId string) error {
+func (repository *TrackerRepository) Add(steamId string, gameId string, playerAmount int) error {
 	query := "INSERT INTO user_tracker (steam_id, game_id, played_amount) VALUES (?, ?, ?);"
-	return repository.DatabaseImpl.ExecuteQuery(query, steamId, gameId, 0)
+	return repository.DatabaseImpl.ExecuteQuery(query, steamId, gameId, playerAmount)
 }
 
 func (repository *TrackerRepository) Update(steamId string, gameId string, playedAmount int) error {
