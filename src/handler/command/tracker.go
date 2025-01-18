@@ -13,7 +13,11 @@ type TrackerCommandHandler struct {
 }
 
 func (handler *TrackerCommandHandler) Add(platformId string, gameId string) error {
-	var err = handler.TrackerRepository.Add(platformId, gameId)
+	playedAmount, err := handler.SteamApi.GetRequestedGamePlayedTime(platformId, gameId)
+	if err != nil {
+		return err
+	}
+	err = handler.TrackerRepository.Add(platformId, gameId, playedAmount)
 	if err != nil {
 		return err
 	}
@@ -21,7 +25,7 @@ func (handler *TrackerCommandHandler) Add(platformId string, gameId string) erro
 }
 
 func (handler *TrackerCommandHandler) UpdateFromSteamApi(steamId string) {
-	apiResponse, err := handler.SteamApi.FetchApiData(steamId)
+	apiResponse, err := handler.SteamApi.FetchRecentGames(steamId)
 	if err != nil {
 		logger.Fail("failed get fetch player information for player: " + steamId + " | ERROR: " + err.Error())
 		return

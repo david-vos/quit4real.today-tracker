@@ -68,15 +68,15 @@ func (endpoint *UserEndpoint) AddTracker() http.HandlerFunc {
 			return
 		}
 
-		// this should query the steam API to set the tracker to  a value instead of 0
 		err := endpoint.TrackerCommandHandler.Add(userID, gameId)
 		if err != nil {
-			logger.Debug("Failed to create user" + err.Error())
-			http.Error(w, "Failed to create user", http.StatusInternalServerError)
+			logger.Debug("Failed to add Tracker: " + err.Error())
+			http.Error(w, "Failed to add tracker", http.StatusInternalServerError)
+			return
 		}
 
 		w.WriteHeader(http.StatusCreated)
-		_, err = w.Write([]byte("User created successfully"))
+		_, err = w.Write([]byte("Tracker created successfully"))
 		if err != nil {
 			return
 		}

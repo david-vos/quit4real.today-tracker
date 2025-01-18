@@ -20,22 +20,50 @@ type MatchedDbGameToSteamGameInfo struct {
 	failed       bool
 }
 
-func (api *SteamApi) FetchApiData(steamId string) (*model.SteamApiResponse, error) {
+func (api *SteamApi) FetchApiGamesPlayer(steamId string) (*model.SteamAPIAllResponse, error) {
+	apiKey := config.GetSteamApiKey()
+	url := fmt.Sprintf("http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key=%s&steamid=%s&format=json", apiKey, steamId)
+	body, err := api.getAndValidateRequest(url)
+	if err != nil {
+		return nil, err
+	}
+
+	var apiResponse model.SteamAPIResponseAllGames
+	if err = json.Unmarshal(body, &apiResponse); err != nil {
+		return nil, fmt.Errorf("error unmarshalling JSON: %w", err)
+	}
+
+	return &apiResponse.Response, nil
+}
+
+func (api *SteamApi) GetRequestedGamePlayedTime(steamId string, gameId string) (int, error) {
+	apiResponse, err := api.FetchApiGamesPlayer(steamId)
+	if err != nil {
+		return 0, fmt.Errorf("error fetching steam api response: %w", err)
+	}
+	if apiResponse.GameCount <= 0 {
+		return 0, fmt.Errorf("it seems you don't own any games")
+	}
+	gameIdInt, err := strconv.Atoi(gameId)
+	if err != nil {
+		return 0, fmt.Errorf("cannot convert game id to int: %w", err)
+	}
+	for _, game := range apiResponse.Games {
+		if gameIdInt != game.AppID {
+			continue // early return to only handle the game that is requested
+		}
+		return game.PlaytimeForever, nil
+	}
+	return 0, fmt.Errorf("Requested game" + gameId + " not found in Player " + steamId + "Played games list")
+}
+
+// FetchRecentGames We use this only because we want to parse less data. In reality, it could be useful to use FetchApiGamesPlayer as it does not matter about downtime longer than 2 weeks.
+func (api *SteamApi) FetchRecentGames(steamId string) (*model.SteamApiResponse, error) {
 	apiKey := config.GetSteamApiKey()
 	url := fmt.Sprintf("http://api.steampowered.com/IPlayerService/GetRecentlyPlayedGames/v0001/?key=%s&steamid=%s&format=json", apiKey, steamId)
-	resp, err := http.Get(url)
+	body, err := api.getAndValidateRequest(url)
 	if err != nil {
-		return nil, fmt.Errorf("error making HTTP request: %w", err)
-	}
-	defer closeBody(resp.Body)
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("HTTP request failed with status: %s", resp.Status)
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("error reading response body: %w", err)
+		return nil, err
 	}
 
 	var apiResponse model.SteamApiResponse
@@ -50,6 +78,25 @@ func closeBody(body io.ReadCloser) {
 	if err := body.Close(); err != nil {
 		logger.Fail("Error closing response body: " + err.Error())
 	}
+}
+
+func (api *SteamApi) getAndValidateRequest(url string) ([]byte, error) {
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, fmt.Errorf("error making HTTP request: %w", err)
+	}
+	defer closeBody(resp.Body)
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("HTTP request failed with status: %s", resp.Status)
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("error reading response body: %w", err)
+	}
+
+	return body, nil
+
 }
 
 func (api *SteamApi) GetOnlyFailed(
@@ -71,9 +118,6 @@ func (api *SteamApi) GetOnlyFailed(
 			continue // Skip if the game is not tracked
 		}
 
-		// Check if the played amount is greater than the current playtime
-		// This will always fail on the first iteration when a new user is created it does not actually set the
-		// PlayedAmount in the beginning making it playtimeForever > 0 which is always true
 		if game.PlaytimeForever > trackedGame.PlayedAmount {
 			info := MatchedDbGameToSteamGameInfo{
 				DbTrack:      trackedGame,
