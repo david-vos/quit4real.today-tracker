@@ -20,6 +20,7 @@ type UserEndpoint struct {
 func (endpoint *UserEndpoint) User() {
 	logger.Info("Trying to start the user endpoints")
 	endpoint.Router.HandleFunc("/users", endpoint.AddUser()).Methods("POST")
+	endpoint.Router.HandleFunc("/user/{userName}", endpoint.GetSteamId()).Methods("GET")
 	endpoint.Router.HandleFunc("/user/{userID}/track/{gameID}", endpoint.AddTracker()).Methods("POST")
 	logger.Info("User endpoints started")
 }
@@ -85,7 +86,7 @@ func (endpoint *UserEndpoint) AddTracker() http.HandlerFunc {
 	}
 }
 
-func (endpoint *UserEndpoint) getSteamId() http.HandlerFunc {
+func (endpoint *UserEndpoint) GetSteamId() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		vars := mux.Vars(r)
 		userID, ok := vars["userName"]
