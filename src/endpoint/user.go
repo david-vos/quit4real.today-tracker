@@ -5,12 +5,14 @@ import (
 	"github.com/gorilla/mux"
 	"net/http"
 	"quit4real.today/logger"
+	"quit4real.today/src/api"
 	"quit4real.today/src/handler/command"
 	"quit4real.today/src/model"
 )
 
 type UserEndpoint struct {
 	Router                *mux.Router
+	SteamApi              *api.SteamApi
 	UserCommandHandler    *command.UserCommandHandler
 	TrackerCommandHandler *command.TrackerCommandHandler
 }
@@ -81,4 +83,26 @@ func (endpoint *UserEndpoint) AddTracker() http.HandlerFunc {
 			return
 		}
 	}
+}
+
+func (endpoint *UserEndpoint) getSteamId() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		vars := mux.Vars(r)
+		userID, ok := vars["userName"]
+		if !ok {
+			http.Error(w, "userName is required", http.StatusBadRequest)
+			return
+		}
+
+		steamId, err := endpoint.SteamApi.GetSteamIdFromVanityName(userID)
+		if err != nil {
+			logger.Debug("Error getting steam id: " + err.Error())
+			http.Error(w, "Error getting steam id", http.StatusNoContent)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, err = w.Write([]byte(steamId))
+	}
+
 }
