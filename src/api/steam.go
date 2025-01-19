@@ -20,6 +20,25 @@ type MatchedDbGameToSteamGameInfo struct {
 	failed       bool
 }
 
+func (api *SteamApi) GetSteamIdFromVanityName(VanityName string) (string, error) {
+	apiKey := config.GetSteamApiKey()
+	url := fmt.Sprintf("https://api.steampowered.com/ISteamUser/ResolveVanityURL/v0001/?key=%s&vanityurl=%s", apiKey, VanityName)
+	body, err := api.getAndValidateRequest(url)
+	if err != nil {
+		return "", err
+	}
+
+	var apiResponse model.SteamApiVanityResponse
+	if err = json.Unmarshal(body, &apiResponse); err != nil {
+		return "", fmt.Errorf("error unmarshalling JSON: %w", err)
+	}
+	if apiResponse.Response.Success != 1 {
+		return "", fmt.Errorf("cannot find steamId linked to that name")
+	}
+
+	return apiResponse.Response.SteamId, nil
+}
+
 func (api *SteamApi) FetchApiGamesPlayer(steamId string) (*model.SteamAPIAllResponse, error) {
 	apiKey := config.GetSteamApiKey()
 	url := fmt.Sprintf("http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key=%s&steamid=%s&format=json", apiKey, steamId)
@@ -74,12 +93,6 @@ func (api *SteamApi) FetchRecentGames(steamId string) (*model.SteamApiResponse, 
 	return &apiResponse, nil
 }
 
-func closeBody(body io.ReadCloser) {
-	if err := body.Close(); err != nil {
-		logger.Fail("Error closing response body: " + err.Error())
-	}
-}
-
 func (api *SteamApi) getAndValidateRequest(url string) ([]byte, error) {
 	resp, err := http.Get(url)
 	if err != nil {
@@ -130,4 +143,10 @@ func (api *SteamApi) GetOnlyFailed(
 	}
 
 	return []MatchedDbGameToSteamGameInfo{}
+}
+
+func closeBody(body io.ReadCloser) {
+	if err := body.Close(); err != nil {
+		logger.Fail("Error closing response body: " + err.Error())
+	}
 }

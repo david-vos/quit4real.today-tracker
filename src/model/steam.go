@@ -36,3 +36,12 @@ type SteamAPIAllResponse struct {
 type SteamAPIResponseAllGames struct {
 	Response SteamAPIAllResponse `json:"response"`
 }
+
+type SteamApiVanityResponse struct {
+	Response SteamApiVanity `json:"response"`
+}
+
+type SteamApiVanity struct {
+	SteamId string `json:"steamid"`
+	Success int    `json:"success"`
+}
