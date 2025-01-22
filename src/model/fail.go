@@ -2,27 +2,34 @@ package model
 
 import (
 	"database/sql"
-	"time"
 )
 
-type Fail struct {
-	ID         int       `json:"id"`
-	SteamId    string    `json:"steam_id"`
-	GameId     string    `json:"game_id"`
-	FailedAt   time.Time `json:"failed_at"`
-	PlayedTime int       `json:"played_time"`
+// GameFailureRecord represents a failure record for a game.
+type GameFailureRecord struct {
+	ID              int    `json:"id"`               // Auto-incrementing ID
+	User            User   `json:"user"`             // Embedded User object
+	Game            Game   `json:"game"`             // Embedded Game object
+	DurationMinutes int    `json:"duration_minutes"` // Duration of the failure in minutes
+	Reason          string `json:"reason"`           // Reason for the failure
+	Timestamp       string `json:"timestamp"`        // When the failure was recorded
 }
 
-func MapFail(rows *sql.Rows) (Fail, error) {
-	var fail Fail
+// MapGameFailureRecord maps SQL rows to a GameFailureRecord struct.
+func MapGameFailureRecord(rows *sql.Rows) (GameFailureRecord, error) {
+	var failureRecord GameFailureRecord
+	var gameID string
 	if err := rows.Scan(
-		&fail.ID,
-		&fail.SteamId,
-		&fail.GameId,
-		&fail.FailedAt,
-		&fail.PlayedTime,
+		&failureRecord.ID,
+		&failureRecord.User.ID,
+		&gameID,
+		&failureRecord.DurationMinutes,
+		&failureRecord.Reason,
+		&failureRecord.Timestamp,
 	); err != nil {
-		return Fail{}, err
+		return GameFailureRecord{}, err
 	}
-	return fail, nil
+
+	// Create a Game object based on the game ID
+	failureRecord.Game = Game{ID: gameID}
+	return failureRecord, nil
 }

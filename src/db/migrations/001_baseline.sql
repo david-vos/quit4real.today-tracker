@@ -3,7 +3,7 @@
 -- Drop tables if they exist (optional, for safety)
 DROP TABLE IF EXISTS game_failure_records;
 DROP TABLE IF EXISTS games;
-DROP TABLE IF EXISTS user_platform_subscriptions;
+DROP TABLE IF EXISTS user_platforms;
 DROP TABLE IF EXISTS platforms;
 DROP TABLE IF EXISTS users;
 
@@ -21,15 +21,16 @@ CREATE TABLE platforms
     name TEXT UNIQUE NOT NULL
 );
 
--- Create User Platform Subscriptions Table
-CREATE TABLE user_platform_subscriptions
+-- Create User Platforms Table
+CREATE TABLE user_platforms
 (
-    id          INTEGER PRIMARY KEY,
-    user_id     TEXT,
-    game_id     TEXT,
-    platform_id TEXT,
+    id                 INTEGER PRIMARY KEY,
+    user_id            TEXT,
+    platform_id        TEXT,
+    platform_user_id   TEXT,
+    platform_user_name TEXT,
+    platform_user_tag  TEXT,
     FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
-    FOREIGN KEY (game_id) REFERENCES games (id) ON DELETE CASCADE,
     FOREIGN KEY (platform_id) REFERENCES platforms (id) ON DELETE CASCADE
 );
 
@@ -43,7 +44,7 @@ CREATE TABLE games
 );
 
 -- Create Game Failure Records Table
-CREATE TABLE game_fails_records
+CREATE TABLE game_failure_records
 (
     id               INTEGER PRIMARY KEY,
     user_id          TEXT,

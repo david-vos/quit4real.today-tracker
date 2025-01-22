@@ -3,8 +3,8 @@ package model
 import "database/sql"
 
 type User struct {
-	ID   int    `json:"id"`
-	Name string `json:"name"`
+	ID   string `json:"id"`   // Using string to match the database schema
+	Name string `json:"name"` // Username
 }
 
 func MapUser(rows *sql.Rows) (User, error) {

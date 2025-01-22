@@ -12,21 +12,31 @@ type FailsCommandHandler struct {
 	FailRepository *repository.FailRepository
 }
 
+// Add adds a new failure record based on the subscription and the new time.
 func (handler *FailsCommandHandler) Add(subscription model.Subscription, newTime int) error {
 	if handler == nil {
 		logger.Fail("FailsCommandHandler is nil")
 		return errors.New("FailsCommandHandler is nil")
 	}
 
-	fail := model.Fail{
-		GameId:     subscription.GameId,
-		FailedAt:   time.Now(),
-		PlayedTime: newTime - subscription.PlayedAmount,
+	// Create a new GameFailureRecord based on the subscription
+	failure := model.GameFailureRecord{
+		User: model.User{
+			ID: subscription.UserId, // Ensure UserId is of type string
+		},
+		Game: model.Game{
+			ID: subscription.GameId, // Ensure GameId is of type string
+		},
+		DurationMinutes: newTime - subscription.PlayedAmount, // Calculate the duration of the failure
+		Reason:          "Game failed due to user action",    // Customize this reason as needed
+		Timestamp:       time.Now().Format(time.RFC3339),     // Format the timestamp as needed
 	}
-	logger.Debug("Attempting to add a fail record for subscription: " + subscription.SteamId)
-	err := handler.FailRepository.Add(fail)
+
+	logger.Debug("Attempting to add a fail record for subscription: " + subscription.PlatformId)
+	err := handler.FailRepository.Add(failure) // Add the failure record to the repository
 	if err != nil {
 		logger.Fail("Failed to add fail record: " + err.Error())
+		return err
 	}
-	return err
+	return nil
 }

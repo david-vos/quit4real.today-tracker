@@ -36,6 +36,6 @@ func (fc *FailCron) updateAndSendNotify() {
 		return
 	}
 	for _, user := range users {
-		fc.SubscriptionCommandHandler.UpdateFromSteamApi(user.SteamId)
+		fc.SubscriptionCommandHandler.UpdateFromSteamApi(user.ID)
 	}
 }
