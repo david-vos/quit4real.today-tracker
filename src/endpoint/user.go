@@ -11,17 +11,17 @@ import (
 )
 
 type UserEndpoint struct {
-	Router                *mux.Router
-	SteamApi              *api.SteamApi
-	UserCommandHandler    *command.UserCommandHandler
-	TrackerCommandHandler *command.TrackerCommandHandler
+	Router                     *mux.Router
+	SteamApi                   *api.SteamApi
+	UserCommandHandler         *command.UserCommandHandler
+	SubscriptionCommandHandler *command.SubscriptionCommandHandler
 }
 
 func (endpoint *UserEndpoint) User() {
 	logger.Info("Trying to start the user endpoints")
 	endpoint.Router.HandleFunc("/users", endpoint.AddUser()).Methods("POST")
 	endpoint.Router.HandleFunc("/user/{userName}", endpoint.GetSteamId()).Methods("GET")
-	endpoint.Router.HandleFunc("/user/{userID}/track/{gameID}", endpoint.AddTracker()).Methods("POST")
+	endpoint.Router.HandleFunc("/user/{userID}/track/{gameID}", endpoint.AddSubscription()).Methods("POST")
 	logger.Info("User endpoints started")
 }
 
@@ -60,9 +60,9 @@ func (endpoint *UserEndpoint) AddUser() http.HandlerFunc {
 	}
 }
 
-func (endpoint *UserEndpoint) AddTracker() http.HandlerFunc {
+func (endpoint *UserEndpoint) AddSubscription() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		logger.Info("Got request to add a new tracker")
+		logger.Info("Got request to add a new Subscription")
 		vars := mux.Vars(r)
 		userID, ok := vars["userID"]
 		gameId, ok := vars["gameID"]
@@ -71,15 +71,15 @@ func (endpoint *UserEndpoint) AddTracker() http.HandlerFunc {
 			return
 		}
 
-		err := endpoint.TrackerCommandHandler.Add(userID, gameId)
+		err := endpoint.SubscriptionCommandHandler.Add(userID, gameId)
 		if err != nil {
-			logger.Debug("Failed to add Tracker: " + err.Error())
-			http.Error(w, "Failed to add tracker", http.StatusInternalServerError)
+			logger.Debug("Failed to add Subscription: " + err.Error())
+			http.Error(w, "Failed to add Subscription", http.StatusInternalServerError)
 			return
 		}
 
 		w.WriteHeader(http.StatusCreated)
-		_, err = w.Write([]byte("Tracker created successfully"))
+		_, err = w.Write([]byte("Subscription created successfully"))
 		if err != nil {
 			return
 		}

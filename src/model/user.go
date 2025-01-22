@@ -3,10 +3,8 @@ package model
 import "database/sql"
 
 type User struct {
-	ID      int    `json:"id"`
-	Name    string `json:"name"`
-	SteamId string `json:"steam_id"`
-	ApiKey  string `json:"api_key"`
+	ID   int    `json:"id"`
+	Name string `json:"name"`
 }
 
 func MapUser(rows *sql.Rows) (User, error) {
@@ -14,8 +12,6 @@ func MapUser(rows *sql.Rows) (User, error) {
 	if err := rows.Scan(
 		&user.ID,
 		&user.Name,
-		&user.SteamId,
-		&user.ApiKey,
 	); err != nil {
 		return User{}, err
 	}

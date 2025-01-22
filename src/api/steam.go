@@ -15,7 +15,7 @@ type SteamApi struct {
 }
 
 type MatchedDbGameToSteamGameInfo struct {
-	DbTrack      model.Tracker
+	DbTrack      model.Subscription
 	SteamApiGame model.SteamGame
 	failed       bool
 }
@@ -114,10 +114,10 @@ func (api *SteamApi) getAndValidateRequest(url string) ([]byte, error) {
 
 func (api *SteamApi) GetOnlyFailed(
 	apiResponse *model.SteamApiResponse,
-	trackedGamesByUser []model.Tracker,
+	trackedGamesByUser []model.Subscription,
 ) []MatchedDbGameToSteamGameInfo {
 	// Create a map for quick lookup of tracked game IDs
-	trackedGameMap := make(map[string]model.Tracker)
+	trackedGameMap := make(map[string]model.Subscription)
 	for _, trackedGame := range trackedGamesByUser {
 		trackedGameMap[trackedGame.GameId] = trackedGame
 	}

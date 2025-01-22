@@ -8,8 +8,8 @@ import (
 )
 
 type FailCron struct {
-	UserQueryHandler      *query.UserQueryHandler
-	TrackerCommandHandler *command.TrackerCommandHandler
+	UserQueryHandler           *query.UserQueryHandler
+	SubscriptionCommandHandler *command.SubscriptionCommandHandler
 }
 
 func (fc *FailCron) Start() {
@@ -36,6 +36,6 @@ func (fc *FailCron) updateAndSendNotify() {
 		return
 	}
 	for _, user := range users {
-		fc.TrackerCommandHandler.UpdateFromSteamApi(user.SteamId)
+		fc.SubscriptionCommandHandler.UpdateFromSteamApi(user.SteamId)
 	}
 }

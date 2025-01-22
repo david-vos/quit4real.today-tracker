@@ -12,19 +12,18 @@ type FailsCommandHandler struct {
 	FailRepository *repository.FailRepository
 }
 
-func (handler *FailsCommandHandler) Add(tracker model.Tracker, newTime int) error {
+func (handler *FailsCommandHandler) Add(subscription model.Subscription, newTime int) error {
 	if handler == nil {
 		logger.Fail("FailsCommandHandler is nil")
 		return errors.New("FailsCommandHandler is nil")
 	}
 
 	fail := model.Fail{
-		SteamId:    tracker.SteamId,
-		GameId:     tracker.GameId,
+		GameId:     subscription.GameId,
 		FailedAt:   time.Now(),
-		PlayedTime: newTime - tracker.PlayedAmount,
+		PlayedTime: newTime - subscription.PlayedAmount,
 	}
-	logger.Debug("Attempting to add a fail record for tracker: " + tracker.SteamId)
+	logger.Debug("Attempting to add a fail record for subscription: " + subscription.SteamId)
 	err := handler.FailRepository.Add(fail)
 	if err != nil {
 		logger.Fail("Failed to add fail record: " + err.Error())

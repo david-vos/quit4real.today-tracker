@@ -6,32 +6,32 @@ import (
 	"quit4real.today/src/repository"
 )
 
-type TrackerCommandHandler struct {
-	SteamApi            *api.SteamApi
-	TrackerRepository   *repository.TrackerRepository
-	FailsCommandHandler *FailsCommandHandler
+type SubscriptionCommandHandler struct {
+	SteamApi               *api.SteamApi
+	SubscriptionRepository *repository.SubscriptionRepository
+	FailsCommandHandler    *FailsCommandHandler
 }
 
-func (handler *TrackerCommandHandler) Add(platformId string, gameId string) error {
+func (handler *SubscriptionCommandHandler) Add(platformId string, gameId string) error {
 	playedAmount, err := handler.SteamApi.GetRequestedGamePlayedTime(platformId, gameId)
 	if err != nil {
 		return err
 	}
-	err = handler.TrackerRepository.Add(platformId, gameId, playedAmount)
+	err = handler.SubscriptionRepository.Add(platformId, gameId, playedAmount)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (handler *TrackerCommandHandler) UpdateFromSteamApi(steamId string) {
+func (handler *SubscriptionCommandHandler) UpdateFromSteamApi(steamId string) {
 	apiResponse, err := handler.SteamApi.FetchRecentGames(steamId)
 	if err != nil {
 		logger.Fail("failed get fetch player information for player: " + steamId + " | ERROR: " + err.Error())
 		return
 	}
 
-	trackedGamesByUser, err := handler.TrackerRepository.GetAll(steamId)
+	trackedGamesByUser, err := handler.SubscriptionRepository.GetAll(steamId)
 	if err != nil {
 		logger.Fail("failed get all tracked games for player: " + steamId + " | ERROR: " + err.Error())
 		return
@@ -40,9 +40,9 @@ func (handler *TrackerCommandHandler) UpdateFromSteamApi(steamId string) {
 	failedGames := handler.SteamApi.GetOnlyFailed(apiResponse, trackedGamesByUser)
 
 	for _, failInfo := range failedGames {
-		// Update tracker repository
-		if err := handler.TrackerRepository.Update(steamId, failInfo.DbTrack.GameId, failInfo.SteamApiGame.PlaytimeForever); err != nil {
-			logger.Fail("Error updating tracker for user: " + steamId + " | ERROR: " + err.Error())
+		// Update subscription repository
+		if err := handler.SubscriptionRepository.Update(steamId, failInfo.DbTrack.GameId, failInfo.SteamApiGame.PlaytimeForever); err != nil {
+			logger.Fail("Error updating subscription for user: " + steamId + " | ERROR: " + err.Error())
 			return
 		}
 		logger.Info("A fail from User: " + steamId + " playing game " + failInfo.DbTrack.GameId)

@@ -36,7 +36,7 @@ func (repository *UserRepository) GetAll() ([]model.User, error) {
 }
 
 func (repository *UserRepository) Add(user model.User) error {
-	query := "INSERT INTO users (id, name, steam_id, api_key) VALUES (?, ?, ?, ?)"
-	err := repository.DatabaseImpl.ExecuteQuery(query, user.ID, user.Name, user.SteamId, user.ApiKey)
+	query := "INSERT INTO users (id, name) VALUES (?, ?)"
+	err := repository.DatabaseImpl.ExecuteQuery(query, user.ID, user.Name)
 	return err
 }
