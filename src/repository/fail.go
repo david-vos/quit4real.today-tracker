@@ -13,7 +13,7 @@ type FailRepository struct {
 
 // Get retrieves all failure records for a specific user by their user ID.
 func (repository *FailRepository) Get(userID string) ([]model.GameFailureRecord, error) {
-	query := "SELECT * FROM game_failure_records WHERE user_id = ?"
+	query := "SELECT * FROM game_failure_records WHERE platform_user_id = ?"
 	rows, err := repository.DatabaseImpl.FetchRows(query, userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse GetFailsForUser: %w", err)
@@ -44,17 +44,12 @@ func (repository *FailRepository) GetTopLeaderBoard() ([]model.GameFailureRecord
 	WITH RankedFails AS (
 		SELECT
 			*,
-			ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY timestamp DESC) AS rn
+			ROW_NUMBER() OVER (PARTITION BY platform_user_id ORDER BY timestamp DESC) AS rn
 		FROM
 			game_failure_records
 	)
 	SELECT
-		id,
-		user_id,
-		game_id,
-		duration_minutes,
-		reason,
-		timestamp
+		*
 	FROM
 		RankedFails
 	WHERE

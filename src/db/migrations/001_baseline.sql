@@ -1,32 +1,29 @@
 -- Migration: Create Necessary Tables for the Application
 
--- Drop tables if they exist (optional, for safety)
-DROP TABLE IF EXISTS game_failure_records;
-DROP TABLE IF EXISTS user_platform_subscriptions;
-DROP TABLE IF EXISTS games;
-DROP TABLE IF EXISTS platforms;
-DROP TABLE IF EXISTS users;
+-- Drop tables if they exist (optional, for safety when running tests)
+-- DROP TABLE IF EXISTS game_failure_records;
+-- DROP TABLE IF EXISTS platform_subscriptions;
+-- DROP TABLE IF EXISTS games;
+-- DROP TABLE IF EXISTS platforms;
+-- DROP TABLE IF EXISTS users;
+--
 
 -- Create Users Table
-CREATE TABLE users
+CREATE TABLE IF NOT EXISTS users
 (
-    id   TEXT PRIMARY KEY, -- User ID (Steam ID)
-    name TEXT NOT NULL     -- User's name
+    id   INTEGER PRIMARY KEY, -- User ID
+    name TEXT NOT NULL        -- User's name
 );
 
 -- Create Platforms Table
-CREATE TABLE platforms
+CREATE TABLE IF NOT EXISTS platforms
 (
     id   TEXT PRIMARY KEY,    -- Platform ID (e.g., 'steam')
     name TEXT UNIQUE NOT NULL -- Platform name (e.g., 'Steam')
 );
 
--- Insert Steam Platform
-INSERT INTO platforms (id, name)
-VALUES ('steam', 'Steam');
-
 -- Create User Platform Subscriptions Table
-CREATE TABLE platform_subscriptions
+CREATE TABLE IF NOT EXISTS platform_subscriptions
 (
     id               INTEGER PRIMARY KEY, -- Auto-incrementing ID
     display_name     TEXT,                -- User ID (foreign key)
@@ -39,7 +36,7 @@ CREATE TABLE platform_subscriptions
 );
 
 -- Create Games Table
-CREATE TABLE games
+CREATE TABLE IF NOT EXISTS games
 (
     id          TEXT PRIMARY KEY, -- Game ID (e.g., Steam App ID)
     name        TEXT NOT NULL,    -- Game name
@@ -48,7 +45,7 @@ CREATE TABLE games
 );
 
 -- Create Game Failure Records Table
-CREATE TABLE game_failure_records
+CREATE TABLE IF NOT EXISTS game_failure_records
 (
     id               INTEGER PRIMARY KEY, -- Auto-incrementing ID
     display_name     TEXT,

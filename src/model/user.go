@@ -3,7 +3,7 @@ package model
 import "database/sql"
 
 type User struct {
-	ID   string `json:"id"`   // Using string to match the database schema
+	ID   int    `json:"id"`   // Using string to match the database schema
 	Name string `json:"name"` // Username
 }
 
