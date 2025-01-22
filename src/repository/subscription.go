@@ -11,9 +11,9 @@ type SubscriptionRepository struct {
 }
 
 // Add inserts a new subscription for a user into the database.
-func (repository *SubscriptionRepository) Add(userId string, gameId string, playedAmount int) error {
-	query := "INSERT INTO user_platform_subscriptions (user_id, game_id, played_amount) VALUES (?, ?, ?);"
-	return repository.DatabaseImpl.ExecuteQuery(query, userId, gameId, playedAmount)
+func (repository *SubscriptionRepository) Add(userId string, platformId string, platformGameId string, platformUserId string, playedAmount int) error {
+	query := "INSERT INTO user_platform_subscriptions (user_id, platform_id, platform_game_id, platform_user_id, played_amount) VALUES (?, ?, ?, ?, ?);"
+	return repository.DatabaseImpl.ExecuteQuery(query, userId, platformId, platformGameId, platformUserId, playedAmount)
 }
 
 // Update updates the played amount for a specific game subscription for a user.

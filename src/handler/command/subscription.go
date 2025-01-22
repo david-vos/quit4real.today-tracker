@@ -13,17 +13,17 @@ type SubscriptionCommandHandler struct {
 }
 
 // Add adds a new subscription for a user and retrieves the played time for the game.
-func (handler *SubscriptionCommandHandler) Add(id string, gameId string) error {
-	playedAmount, err := handler.SteamApi.GetRequestedGamePlayedTime(id, gameId)
-	if err != nil {
-		return err
-	}
-	err = handler.SubscriptionRepository.Add(id, gameId, playedAmount)
-	if err != nil {
-		return err
-	}
-	return nil
-}
+//func (handler *SubscriptionCommandHandler) Add(id string, gameId string) error {
+//	playedAmount, err := handler.SteamApi.GetRequestedGamePlayedTime(id, gameId)
+//	if err != nil {
+//		return err
+//	}
+//	err = handler.SubscriptionRepository.Add(id, gameId, playedAmount)
+//	if err != nil {
+//		return err
+//	}
+//	return nil
+//}
 
 // UpdateFromSteamApi updates the user's subscriptions based on recent games fetched from the Steam API.
 func (handler *SubscriptionCommandHandler) UpdateFromSteamApi(steamId string) {

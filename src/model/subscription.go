@@ -3,10 +3,12 @@ package model
 import "database/sql"
 
 type Subscription struct {
-	UserId       string `json:"user_id"`       // Ensure this is a string
-	GameId       string `json:"game_id"`       // Ensure this is a string
-	PlatformId   string `json:"platform_id"`   // Ensure this is a string
-	PlayedAmount int    `json:"played_amount"` // This can remain an int
+	ID             int64
+	UserId         string `json:"user_id"`          // Ensure this is a string
+	PlatformId     string `json:"platform_id"`      // Ensure this is a string
+	GameId         string `json:"platform_game_id"` // Ensure this is a string
+	PlatFormUserId string `json:"platform_user_id"`
+	PlayedAmount   int    `json:"played_amount"` // This can remain an int
 }
 
 func MapSubscription(rows *sql.Rows) (Subscription, error) {
@@ -16,6 +18,7 @@ func MapSubscription(rows *sql.Rows) (Subscription, error) {
 		&subscription.UserId,
 		&subscription.GameId,
 		&subscription.PlatformId,
+		&subscription.PlatFormUserId,
 		&subscription.PlayedAmount,
 	); err != nil {
 		return Subscription{}, err

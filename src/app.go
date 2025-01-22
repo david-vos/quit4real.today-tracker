@@ -50,7 +50,7 @@ func AppInit(dataBaseConnection *sql.DB) *App {
 	commandHandlers := createCommandHandlers(repositories, steamApi)
 	queryHandlers := createQueryHandlers(repositories)
 	jobs := createJobs(queryHandlers, commandHandlers)
-	endpoints := createEndpoints(commandHandlers, queryHandlers, steamApi)
+	endpoints := createEndpoints(commandHandlers, queryHandlers, steamApi, repositories.SubscriptionRepository)
 
 	return &App{
 		DatabaseImpl:    databaseImpl,
@@ -107,7 +107,7 @@ func createSteamApi() *api.SteamApi {
 	return &api.SteamApi{}
 }
 
-func createEndpoints(commandHandlers *CommandHandlers, queryHandlers *QueryHandlers, steamApi *api.SteamApi) *endpoint.Endpoints {
+func createEndpoints(commandHandlers *CommandHandlers, queryHandlers *QueryHandlers, steamApi *api.SteamApi, removeMe *repository.SubscriptionRepository) *endpoint.Endpoints {
 	router := mux.NewRouter()
 
 	return &endpoint.Endpoints{
@@ -121,6 +121,10 @@ func createEndpoints(commandHandlers *CommandHandlers, queryHandlers *QueryHandl
 		FailEndpoint: &endpoint.FailEndpoint{
 			Router:           router,
 			FailQueryHandler: queryHandlers.FailsQueryHandler,
+		},
+		SubscriptionEndpoint: &endpoint.SubscriptionEndpoint{
+			Router:                 router,
+			SubscriptionRepository: removeMe,
 		},
 	}
 }

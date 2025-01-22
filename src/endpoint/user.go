@@ -20,8 +20,7 @@ type UserEndpoint struct {
 func (endpoint *UserEndpoint) User() {
 	logger.Info("Trying to start the user endpoints")
 	endpoint.Router.HandleFunc("/users", endpoint.AddUser()).Methods("POST")
-	endpoint.Router.HandleFunc("/user/{userName}", endpoint.GetSteamId()).Methods("GET")
-	endpoint.Router.HandleFunc("/user/{userID}/track/{gameID}", endpoint.AddSubscription()).Methods("POST")
+	endpoint.Router.HandleFunc("/users/${userName}/steamId", endpoint.GetSteamId()).Methods("GET")
 	logger.Info("User endpoints started")
 }
 
@@ -54,32 +53,6 @@ func (endpoint *UserEndpoint) AddUser() http.HandlerFunc {
 		// Respond with success
 		w.WriteHeader(http.StatusCreated)
 		_, err = w.Write([]byte("User created successfully"))
-		if err != nil {
-			return
-		}
-	}
-}
-
-func (endpoint *UserEndpoint) AddSubscription() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		logger.Info("Got request to add a new Subscription")
-		vars := mux.Vars(r)
-		userID, ok := vars["userID"]
-		gameId, ok := vars["gameID"]
-		if !ok {
-			http.Error(w, "userID and GameId are required", http.StatusBadRequest)
-			return
-		}
-
-		err := endpoint.SubscriptionCommandHandler.Add(userID, gameId)
-		if err != nil {
-			logger.Debug("Failed to add Subscription: " + err.Error())
-			http.Error(w, "Failed to add Subscription", http.StatusInternalServerError)
-			return
-		}
-
-		w.WriteHeader(http.StatusCreated)
-		_, err = w.Write([]byte("Subscription created successfully"))
 		if err != nil {
 			return
 		}
