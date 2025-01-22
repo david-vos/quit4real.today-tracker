@@ -18,13 +18,13 @@ func (repository *SubscriptionRepository) Add(displayName string, platformId str
 
 // Update updates the played amount for a specific game subscription for a user.
 func (repository *SubscriptionRepository) Update(userId string, gameId string, playedAmount int) error {
-	query := "UPDATE platform_subscriptions SET played_amount = ? WHERE user_id = ? AND game_id = ?;"
+	query := "UPDATE platform_subscriptions SET played_amount = ? WHERE platform_user_id = ? AND platform_game_id = ?;"
 	return repository.DatabaseImpl.ExecuteQuery(query, playedAmount, userId, gameId)
 }
 
 // Get retrieves a specific subscription for a user and game.
 func (repository *SubscriptionRepository) Get(userId string, gameId string) (model.Subscription, error) {
-	query := "SELECT * FROM platform_subscriptions WHERE user_id = ? AND game_id = ?;"
+	query := "SELECT * FROM platform_subscriptions WHERE platform_user_id = ? AND platform_game_id = ?;"
 	rows, err := repository.DatabaseImpl.FetchRows(query, userId, gameId)
 	if err != nil {
 		return model.Subscription{}, err
@@ -43,7 +43,7 @@ func (repository *SubscriptionRepository) Get(userId string, gameId string) (mod
 
 // GetAllForUser retrieves all subscriptions for a specific user.
 func (repository *SubscriptionRepository) GetAllForUser(userId string) ([]model.Subscription, error) {
-	query := "SELECT * FROM platform_subscriptions WHERE user_id = ?;"
+	query := "SELECT * FROM platform_subscriptions WHERE platform_user_id = ?;"
 	rows, err := repository.DatabaseImpl.FetchRows(query, userId)
 	if err != nil {
 		return nil, err
