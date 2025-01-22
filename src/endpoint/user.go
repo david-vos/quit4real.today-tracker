@@ -11,17 +11,16 @@ import (
 )
 
 type UserEndpoint struct {
-	Router                *mux.Router
-	SteamApi              *api.SteamApi
-	UserCommandHandler    *command.UserCommandHandler
-	TrackerCommandHandler *command.TrackerCommandHandler
+	Router                     *mux.Router
+	SteamApi                   *api.SteamApi
+	UserCommandHandler         *command.UserCommandHandler
+	SubscriptionCommandHandler *command.SubscriptionCommandHandler
 }
 
 func (endpoint *UserEndpoint) User() {
 	logger.Info("Trying to start the user endpoints")
 	endpoint.Router.HandleFunc("/users", endpoint.AddUser()).Methods("POST")
-	endpoint.Router.HandleFunc("/user/{userName}", endpoint.GetSteamId()).Methods("GET")
-	endpoint.Router.HandleFunc("/user/{userID}/track/{gameID}", endpoint.AddTracker()).Methods("POST")
+	endpoint.Router.HandleFunc("/users/${userName}/steamId", endpoint.GetSteamId()).Methods("GET")
 	logger.Info("User endpoints started")
 }
 
@@ -54,32 +53,6 @@ func (endpoint *UserEndpoint) AddUser() http.HandlerFunc {
 		// Respond with success
 		w.WriteHeader(http.StatusCreated)
 		_, err = w.Write([]byte("User created successfully"))
-		if err != nil {
-			return
-		}
-	}
-}
-
-func (endpoint *UserEndpoint) AddTracker() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		logger.Info("Got request to add a new tracker")
-		vars := mux.Vars(r)
-		userID, ok := vars["userID"]
-		gameId, ok := vars["gameID"]
-		if !ok {
-			http.Error(w, "userID and GameId are required", http.StatusBadRequest)
-			return
-		}
-
-		err := endpoint.TrackerCommandHandler.Add(userID, gameId)
-		if err != nil {
-			logger.Debug("Failed to add Tracker: " + err.Error())
-			http.Error(w, "Failed to add tracker", http.StatusInternalServerError)
-			return
-		}
-
-		w.WriteHeader(http.StatusCreated)
-		_, err = w.Write([]byte("Tracker created successfully"))
 		if err != nil {
 			return
 		}

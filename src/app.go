@@ -24,22 +24,23 @@ type App struct {
 
 // CommandHandlers holds all command handlers.
 type CommandHandlers struct {
-	FailsCommandHandler   *command.FailsCommandHandler
-	TrackerCommandHandler *command.TrackerCommandHandler
-	UserCommandHandler    *command.UserCommandHandler
+	FailsCommandHandler        *command.FailsCommandHandler
+	SubscriptionCommandHandler *command.SubscriptionCommandHandler
+	UserCommandHandler         *command.UserCommandHandler
 }
 
 // QueryHandlers holds all query handlers.
 type QueryHandlers struct {
-	FailsQueryHandler *query.FailQueryHandler
-	UserQueryHandler  *query.UserQueryHandler
+	FailsQueryHandler        *query.FailQueryHandler
+	UserQueryHandler         *query.UserQueryHandler
+	SubscriptionQueryHandler *query.SubscriptionQueryHandler
 }
 
 // Repositories holds all repositories.
 type Repositories struct {
-	FailRepository    *repository.FailRepository
-	UserRepository    *repository.UserRepository
-	TrackerRepository *repository.TrackerRepository
+	FailRepository         *repository.FailRepository
+	UserRepository         *repository.UserRepository
+	SubscriptionRepository *repository.SubscriptionRepository
 }
 
 // AppInit initializes the application with the provided database connection.
@@ -65,31 +66,32 @@ func AppInit(dataBaseConnection *sql.DB) *App {
 
 func createRepositories(databaseImpl *repository.DatabaseImpl) *Repositories {
 	return &Repositories{
-		TrackerRepository: &repository.TrackerRepository{DatabaseImpl: databaseImpl},
-		UserRepository:    &repository.UserRepository{DatabaseImpl: databaseImpl},
-		FailRepository:    &repository.FailRepository{DatabaseImpl: databaseImpl},
+		SubscriptionRepository: &repository.SubscriptionRepository{DatabaseImpl: databaseImpl},
+		UserRepository:         &repository.UserRepository{DatabaseImpl: databaseImpl},
+		FailRepository:         &repository.FailRepository{DatabaseImpl: databaseImpl},
 	}
 }
 
 func createCommandHandlers(repositories *Repositories, steamApi *api.SteamApi) *CommandHandlers {
 	failsHandler := &command.FailsCommandHandler{FailRepository: repositories.FailRepository}
-	trackerCommandHandler := &command.TrackerCommandHandler{
-		SteamApi:            steamApi,
-		TrackerRepository:   repositories.TrackerRepository,
-		FailsCommandHandler: failsHandler,
+	subscriptionCommandHandler := &command.SubscriptionCommandHandler{
+		SteamApi:               steamApi,
+		SubscriptionRepository: repositories.SubscriptionRepository,
+		FailsCommandHandler:    failsHandler,
 	}
 
 	return &CommandHandlers{
-		FailsCommandHandler:   failsHandler,
-		TrackerCommandHandler: trackerCommandHandler,
-		UserCommandHandler:    &command.UserCommandHandler{UserRepository: repositories.UserRepository},
+		FailsCommandHandler:        failsHandler,
+		SubscriptionCommandHandler: subscriptionCommandHandler,
+		UserCommandHandler:         &command.UserCommandHandler{UserRepository: repositories.UserRepository},
 	}
 }
 
 func createQueryHandlers(repositories *Repositories) *QueryHandlers {
 	return &QueryHandlers{
-		FailsQueryHandler: &query.FailQueryHandler{FailRepository: repositories.FailRepository},
-		UserQueryHandler:  &query.UserQueryHandler{UserRepository: repositories.UserRepository},
+		FailsQueryHandler:        &query.FailQueryHandler{FailRepository: repositories.FailRepository},
+		UserQueryHandler:         &query.UserQueryHandler{UserRepository: repositories.UserRepository},
+		SubscriptionQueryHandler: &query.SubscriptionQueryHandler{SubscriptionRepository: repositories.SubscriptionRepository},
 	}
 }
 
@@ -97,8 +99,8 @@ func createJobs(queryHandlers *QueryHandlers, commandHandlers *CommandHandlers) 
 
 	return &cron.Jobs{
 		FailCron: &cron.FailCron{
-			UserQueryHandler:      queryHandlers.UserQueryHandler,
-			TrackerCommandHandler: commandHandlers.TrackerCommandHandler,
+			SubscriptionCommandHandler: commandHandlers.SubscriptionCommandHandler,
+			SubscriptionQueryHandler:   queryHandlers.SubscriptionQueryHandler,
 		},
 	}
 }
@@ -113,14 +115,18 @@ func createEndpoints(commandHandlers *CommandHandlers, queryHandlers *QueryHandl
 	return &endpoint.Endpoints{
 		Router: router,
 		UserEndpoint: &endpoint.UserEndpoint{
-			Router:                router,
-			SteamApi:              steamApi,
-			UserCommandHandler:    commandHandlers.UserCommandHandler,
-			TrackerCommandHandler: commandHandlers.TrackerCommandHandler,
+			Router:                     router,
+			SteamApi:                   steamApi,
+			UserCommandHandler:         commandHandlers.UserCommandHandler,
+			SubscriptionCommandHandler: commandHandlers.SubscriptionCommandHandler,
 		},
 		FailEndpoint: &endpoint.FailEndpoint{
 			Router:           router,
 			FailQueryHandler: queryHandlers.FailsQueryHandler,
+		},
+		SubscriptionEndpoint: &endpoint.SubscriptionEndpoint{
+			Router:                     router,
+			SubscriptionCommandHandler: commandHandlers.SubscriptionCommandHandler,
 		},
 	}
 }

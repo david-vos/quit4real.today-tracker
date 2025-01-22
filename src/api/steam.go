@@ -11,18 +11,19 @@ import (
 	"strconv"
 )
 
-type SteamApi struct {
-}
+type SteamApi struct{}
 
+// MatchedDbGameToSteamGameInfo holds the mapping between a database tracked game and a Steam game.
 type MatchedDbGameToSteamGameInfo struct {
-	DbTrack      model.Tracker
+	DbTrack      model.Subscription
 	SteamApiGame model.SteamGame
-	failed       bool
+	Failed       bool
 }
 
-func (api *SteamApi) GetSteamIdFromVanityName(VanityName string) (string, error) {
+// GetSteamIdFromVanityName resolves a vanity name to a Steam ID.
+func (api *SteamApi) GetSteamIdFromVanityName(vanityName string) (string, error) {
 	apiKey := config.GetSteamApiKey()
-	url := fmt.Sprintf("https://api.steampowered.com/ISteamUser/ResolveVanityURL/v0001/?key=%s&vanityurl=%s", apiKey, VanityName)
+	url := fmt.Sprintf("https://api.steampowered.com/ISteamUser/ResolveVanityURL/v0001/?key=%s&vanityurl=%s", apiKey, vanityName)
 	body, err := api.getAndValidateRequest(url)
 	if err != nil {
 		return "", err
@@ -39,6 +40,7 @@ func (api *SteamApi) GetSteamIdFromVanityName(VanityName string) (string, error)
 	return apiResponse.Response.SteamId, nil
 }
 
+// FetchApiGamesPlayer retrieves all games owned by a player.
 func (api *SteamApi) FetchApiGamesPlayer(steamId string) (*model.SteamAPIAllResponse, error) {
 	apiKey := config.GetSteamApiKey()
 	url := fmt.Sprintf("http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key=%s&steamid=%s&format=json", apiKey, steamId)
@@ -55,6 +57,7 @@ func (api *SteamApi) FetchApiGamesPlayer(steamId string) (*model.SteamAPIAllResp
 	return &apiResponse.Response, nil
 }
 
+// GetRequestedGamePlayedTime retrieves the total playtime for a specific game owned by a player.
 func (api *SteamApi) GetRequestedGamePlayedTime(steamId string, gameId string) (int, error) {
 	apiResponse, err := api.FetchApiGamesPlayer(steamId)
 	if err != nil {
@@ -63,20 +66,21 @@ func (api *SteamApi) GetRequestedGamePlayedTime(steamId string, gameId string) (
 	if apiResponse.GameCount <= 0 {
 		return 0, fmt.Errorf("it seems you don't own any games")
 	}
+
 	gameIdInt, err := strconv.Atoi(gameId)
 	if err != nil {
 		return 0, fmt.Errorf("cannot convert game id to int: %w", err)
 	}
+
 	for _, game := range apiResponse.Games {
-		if gameIdInt != game.AppID {
-			continue // early return to only handle the game that is requested
+		if gameIdInt == game.AppID {
+			return game.PlaytimeForever, nil
 		}
-		return game.PlaytimeForever, nil
 	}
-	return 0, fmt.Errorf("Requested game" + gameId + " not found in Player " + steamId + "Played games list")
+	return 0, fmt.Errorf("requested game %s not found in player %s's played games list", gameId, steamId)
 }
 
-// FetchRecentGames We use this only because we want to parse less data. In reality, it could be useful to use FetchApiGamesPlayer as it does not matter about downtime longer than 2 weeks.
+// FetchRecentGames retrieves the recently played games for a player.
 func (api *SteamApi) FetchRecentGames(steamId string) (*model.SteamApiResponse, error) {
 	apiKey := config.GetSteamApiKey()
 	url := fmt.Sprintf("http://api.steampowered.com/IPlayerService/GetRecentlyPlayedGames/v0001/?key=%s&steamid=%s&format=json", apiKey, steamId)
@@ -93,6 +97,7 @@ func (api *SteamApi) FetchRecentGames(steamId string) (*model.SteamApiResponse, 
 	return &apiResponse, nil
 }
 
+// getAndValidateRequest performs an HTTP GET request and validates the response.
 func (api *SteamApi) getAndValidateRequest(url string) ([]byte, error) {
 	resp, err := http.Get(url)
 	if err != nil {
@@ -103,23 +108,24 @@ func (api *SteamApi) getAndValidateRequest(url string) ([]byte, error) {
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("HTTP request failed with status: %s", resp.Status)
 	}
+
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("error reading response body: %w", err)
 	}
 
 	return body, nil
-
 }
 
+// GetOnlyFailed filters out the games that have failed based on the API response and tracked games.
 func (api *SteamApi) GetOnlyFailed(
 	apiResponse *model.SteamApiResponse,
-	trackedGamesByUser []model.Tracker,
+	trackedGamesByUser []model.Subscription,
 ) []MatchedDbGameToSteamGameInfo {
 	// Create a map for quick lookup of tracked game IDs
-	trackedGameMap := make(map[string]model.Tracker)
+	trackedGameMap := make(map[string]model.Subscription)
 	for _, trackedGame := range trackedGamesByUser {
-		trackedGameMap[trackedGame.GameId] = trackedGame
+		trackedGameMap[trackedGame.PlatformGameId] = trackedGame
 	}
 
 	var response []MatchedDbGameToSteamGameInfo
@@ -135,16 +141,16 @@ func (api *SteamApi) GetOnlyFailed(
 			info := MatchedDbGameToSteamGameInfo{
 				DbTrack:      trackedGame,
 				SteamApiGame: game,
-				failed:       true,
+				Failed:       true,
 			}
 			response = append(response, info)
-			return response
 		}
 	}
 
-	return []MatchedDbGameToSteamGameInfo{}
+	return response
 }
 
+// closeBody closes the response body and logs any errors.
 func closeBody(body io.ReadCloser) {
 	if err := body.Close(); err != nil {
 		logger.Fail("Error closing response body: " + err.Error())
