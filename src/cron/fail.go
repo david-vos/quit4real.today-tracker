@@ -8,8 +8,8 @@ import (
 )
 
 type FailCron struct {
-	UserQueryHandler           *query.UserQueryHandler
 	SubscriptionCommandHandler *command.SubscriptionCommandHandler
+	SubscriptionQueryHandler   *query.SubscriptionQueryHandler
 }
 
 func (fc *FailCron) Start() {
@@ -19,7 +19,7 @@ func (fc *FailCron) Start() {
 	// 694 -> max amount of users :thinking per API key
 	// Currently set to 1 minute for dev, I will increase this back to 10 minutes when going live
 	_, err := cronJob.AddFunc("@every 1m", func() {
-		fc.updateAndSendNotify()
+		fc.updateAndSendNotifySteam()
 	})
 	if err != nil {
 		logger.Fail("Error adding cron job: " + err.Error())
@@ -29,13 +29,14 @@ func (fc *FailCron) Start() {
 	cronJob.Start()
 }
 
-func (fc *FailCron) updateAndSendNotify() {
-	users, err := fc.UserQueryHandler.GetAll()
+func (fc *FailCron) updateAndSendNotifySteam() {
+	//users, err := fc.UserQueryHandler.GetAll()
+	allSteamSubscriptions, err := fc.SubscriptionQueryHandler.GetAllSteam()
 	if err != nil {
 		logger.Fail("Error getting user when running cron jobs: " + err.Error())
 		return
 	}
-	for _, user := range users {
-		fc.SubscriptionCommandHandler.UpdateFromSteamApi(user.ID)
+	for _, subscription := range allSteamSubscriptions {
+		fc.SubscriptionCommandHandler.UpdateFromSteamApi(subscription.PlatFormUserId)
 	}
 }

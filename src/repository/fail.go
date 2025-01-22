@@ -87,7 +87,7 @@ func (repository *FailRepository) GetTopLeaderBoard() ([]model.GameFailureRecord
 
 // Add inserts a new failure record into the database.
 func (repository *FailRepository) Add(failure model.GameFailureRecord) error {
-	query := "INSERT INTO game_failure_records (user_id, game_id, duration_minutes, reason, timestamp) VALUES (?, ?, ?, ?, ?)"
-	err := repository.DatabaseImpl.ExecuteQuery(query, failure.User.ID, failure.Game.ID, failure.DurationMinutes, failure.Reason, failure.Timestamp)
+	query := "INSERT INTO game_failure_records (display_name, platform_id, platform_game_id, platform_user_id, duration_minutes, reason, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?)"
+	err := repository.DatabaseImpl.ExecuteQuery(query, failure.DisplayName, failure.PlatformId, failure.PlatformGameId, failure.PlatformUserId, failure.DurationMinutes, failure.Reason, failure.Timestamp)
 	return err
 }

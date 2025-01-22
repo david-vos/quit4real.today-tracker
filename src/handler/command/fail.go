@@ -21,12 +21,10 @@ func (handler *FailsCommandHandler) Add(subscription model.Subscription, newTime
 
 	// Create a new GameFailureRecord based on the subscription
 	failure := model.GameFailureRecord{
-		User: model.User{
-			ID: subscription.UserId, // Ensure UserId is of type string
-		},
-		Game: model.Game{
-			ID: subscription.GameId, // Ensure GameId is of type string
-		},
+		DisplayName:     subscription.DisplayName,
+		PlatformId:      subscription.PlatformId,
+		PlatformGameId:  subscription.PlatformGameId,
+		PlatformUserId:  subscription.PlatFormUserId,
 		DurationMinutes: newTime - subscription.PlayedAmount, // Calculate the duration of the failure
 		Reason:          "Game failed due to user action",    // Customize this reason as needed
 		Timestamp:       time.Now().Format(time.RFC3339),     // Format the timestamp as needed

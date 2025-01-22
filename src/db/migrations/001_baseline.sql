@@ -26,15 +26,14 @@ INSERT INTO platforms (id, name)
 VALUES ('steam', 'Steam');
 
 -- Create User Platform Subscriptions Table
-CREATE TABLE user_platform_subscriptions
+CREATE TABLE platform_subscriptions
 (
     id               INTEGER PRIMARY KEY, -- Auto-incrementing ID
-    user_id          TEXT,                -- User ID (foreign key)
+    display_name     TEXT,                -- User ID (foreign key)
     platform_id      TEXT,                -- Platform ID (foreign key)
     platform_game_id TEXT,                -- Game ID (foreign key)
     platform_user_id TEXT,                -- User's ID on the specific platform
     played_amount    INT DEFAULT 0,       -- Amount of time played
-    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
     FOREIGN KEY (platform_game_id) REFERENCES games (id) ON DELETE CASCADE,
     FOREIGN KEY (platform_id) REFERENCES platforms (id) ON DELETE CASCADE
 );
@@ -52,13 +51,15 @@ CREATE TABLE games
 CREATE TABLE game_failure_records
 (
     id               INTEGER PRIMARY KEY, -- Auto-incrementing ID
-    user_id          TEXT,                -- User ID (foreign key)
-    game_id          TEXT,                -- Game ID (foreign key)
+    display_name     TEXT,
+    platform_id      TEXT,                -- Game ID (foreign key)
+    platform_game_id TEXT,
+    platform_user_id TEXT,
     duration_minutes INT,                 -- Duration of the failure in minutes
     reason           TEXT,                -- Reason for the failure
     timestamp        DATETIME,            -- When the failure was recorded
-    FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
-    FOREIGN KEY (game_id) REFERENCES games (id) ON DELETE CASCADE
+    FOREIGN KEY (platform_id) references platforms (id) ON DELETE CASCADE,
+    FOREIGN KEY (platform_game_id) REFERENCES games (id) ON DELETE CASCADE
 );
 
 -- Migration completed

@@ -5,13 +5,13 @@ import (
 	"github.com/gorilla/mux"
 	"net/http"
 	"quit4real.today/logger"
+	"quit4real.today/src/handler/command"
 	"quit4real.today/src/model"
-	"quit4real.today/src/repository"
 )
 
 type SubscriptionEndpoint struct {
-	Router                 *mux.Router
-	SubscriptionRepository *repository.SubscriptionRepository
+	Router                     *mux.Router
+	SubscriptionCommandHandler *command.SubscriptionCommandHandler
 }
 
 // Subscription handles the subscription-related endpoints.
@@ -40,16 +40,10 @@ func (endpoint *SubscriptionEndpoint) AddSubscription() http.HandlerFunc {
 			return
 		}
 
-		// Add the subscription to the database
-		if err := endpoint.SubscriptionRepository.Add(
-			subscription.UserId,
-			subscription.PlatformId,
-			subscription.GameId,
-			subscription.PlatFormUserId,
-			subscription.PlayedAmount); err != nil {
+		err = endpoint.SubscriptionCommandHandler.Add(subscription)
+		if err != nil {
 			logger.Debug("Error adding subscription: " + err.Error())
-			http.Error(w, "Failed to create subscription", http.StatusInternalServerError)
-			return
+			http.Error(w, "Error adding subscription: "+err.Error(), http.StatusInternalServerError)
 		}
 
 		// Respond with success

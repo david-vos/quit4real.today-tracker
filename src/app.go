@@ -31,8 +31,9 @@ type CommandHandlers struct {
 
 // QueryHandlers holds all query handlers.
 type QueryHandlers struct {
-	FailsQueryHandler *query.FailQueryHandler
-	UserQueryHandler  *query.UserQueryHandler
+	FailsQueryHandler        *query.FailQueryHandler
+	UserQueryHandler         *query.UserQueryHandler
+	SubscriptionQueryHandler *query.SubscriptionQueryHandler
 }
 
 // Repositories holds all repositories.
@@ -50,7 +51,7 @@ func AppInit(dataBaseConnection *sql.DB) *App {
 	commandHandlers := createCommandHandlers(repositories, steamApi)
 	queryHandlers := createQueryHandlers(repositories)
 	jobs := createJobs(queryHandlers, commandHandlers)
-	endpoints := createEndpoints(commandHandlers, queryHandlers, steamApi, repositories.SubscriptionRepository)
+	endpoints := createEndpoints(commandHandlers, queryHandlers, steamApi)
 
 	return &App{
 		DatabaseImpl:    databaseImpl,
@@ -88,8 +89,9 @@ func createCommandHandlers(repositories *Repositories, steamApi *api.SteamApi) *
 
 func createQueryHandlers(repositories *Repositories) *QueryHandlers {
 	return &QueryHandlers{
-		FailsQueryHandler: &query.FailQueryHandler{FailRepository: repositories.FailRepository},
-		UserQueryHandler:  &query.UserQueryHandler{UserRepository: repositories.UserRepository},
+		FailsQueryHandler:        &query.FailQueryHandler{FailRepository: repositories.FailRepository},
+		UserQueryHandler:         &query.UserQueryHandler{UserRepository: repositories.UserRepository},
+		SubscriptionQueryHandler: &query.SubscriptionQueryHandler{SubscriptionRepository: repositories.SubscriptionRepository},
 	}
 }
 
@@ -97,8 +99,8 @@ func createJobs(queryHandlers *QueryHandlers, commandHandlers *CommandHandlers) 
 
 	return &cron.Jobs{
 		FailCron: &cron.FailCron{
-			UserQueryHandler:           queryHandlers.UserQueryHandler,
 			SubscriptionCommandHandler: commandHandlers.SubscriptionCommandHandler,
+			SubscriptionQueryHandler:   queryHandlers.SubscriptionQueryHandler,
 		},
 	}
 }
@@ -107,7 +109,7 @@ func createSteamApi() *api.SteamApi {
 	return &api.SteamApi{}
 }
 
-func createEndpoints(commandHandlers *CommandHandlers, queryHandlers *QueryHandlers, steamApi *api.SteamApi, removeMe *repository.SubscriptionRepository) *endpoint.Endpoints {
+func createEndpoints(commandHandlers *CommandHandlers, queryHandlers *QueryHandlers, steamApi *api.SteamApi) *endpoint.Endpoints {
 	router := mux.NewRouter()
 
 	return &endpoint.Endpoints{
@@ -123,8 +125,8 @@ func createEndpoints(commandHandlers *CommandHandlers, queryHandlers *QueryHandl
 			FailQueryHandler: queryHandlers.FailsQueryHandler,
 		},
 		SubscriptionEndpoint: &endpoint.SubscriptionEndpoint{
-			Router:                 router,
-			SubscriptionRepository: removeMe,
+			Router:                     router,
+			SubscriptionCommandHandler: commandHandlers.SubscriptionCommandHandler,
 		},
 	}
 }

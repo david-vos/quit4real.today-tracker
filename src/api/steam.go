@@ -125,7 +125,7 @@ func (api *SteamApi) GetOnlyFailed(
 	// Create a map for quick lookup of tracked game IDs
 	trackedGameMap := make(map[string]model.Subscription)
 	for _, trackedGame := range trackedGamesByUser {
-		trackedGameMap[trackedGame.GameId] = trackedGame
+		trackedGameMap[trackedGame.PlatformGameId] = trackedGame
 	}
 
 	var response []MatchedDbGameToSteamGameInfo
