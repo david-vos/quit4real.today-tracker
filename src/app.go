@@ -27,6 +27,7 @@ type CommandHandlers struct {
 	FailsCommandHandler        *command.FailsCommandHandler
 	SubscriptionCommandHandler *command.SubscriptionCommandHandler
 	UserCommandHandler         *command.UserCommandHandler
+	GameCommandHandler         *command.GameCommandHandler
 }
 
 // QueryHandlers holds all query handlers.
@@ -41,6 +42,7 @@ type Repositories struct {
 	FailRepository         *repository.FailRepository
 	UserRepository         *repository.UserRepository
 	SubscriptionRepository *repository.SubscriptionRepository
+	GameRepository         *repository.GameRepository
 }
 
 // AppInit initializes the application with the provided database connection.
@@ -69,21 +71,25 @@ func createRepositories(databaseImpl *repository.DatabaseImpl) *Repositories {
 		SubscriptionRepository: &repository.SubscriptionRepository{DatabaseImpl: databaseImpl},
 		UserRepository:         &repository.UserRepository{DatabaseImpl: databaseImpl},
 		FailRepository:         &repository.FailRepository{DatabaseImpl: databaseImpl},
+		GameRepository:         &repository.GameRepository{DatabaseImpl: databaseImpl},
 	}
 }
 
 func createCommandHandlers(repositories *Repositories, steamApi *api.SteamApi) *CommandHandlers {
 	failsHandler := &command.FailsCommandHandler{FailRepository: repositories.FailRepository}
+	gameHandler := &command.GameCommandHandler{GameRepository: repositories.GameRepository}
 	subscriptionCommandHandler := &command.SubscriptionCommandHandler{
 		SteamApi:               steamApi,
 		SubscriptionRepository: repositories.SubscriptionRepository,
 		FailsCommandHandler:    failsHandler,
+		GameCommandHandler:     gameHandler,
 	}
 
 	return &CommandHandlers{
 		FailsCommandHandler:        failsHandler,
 		SubscriptionCommandHandler: subscriptionCommandHandler,
 		UserCommandHandler:         &command.UserCommandHandler{UserRepository: repositories.UserRepository},
+		GameCommandHandler:         &command.GameCommandHandler{GameRepository: repositories.GameRepository},
 	}
 }
 
