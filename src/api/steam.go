@@ -43,7 +43,7 @@ func (api *SteamApi) GetSteamIdFromVanityName(vanityName string) (string, error)
 // FetchApiGamesPlayer retrieves all games owned by a player.
 func (api *SteamApi) FetchApiGamesPlayer(steamId string) (*model.SteamAPIAllResponse, error) {
 	apiKey := config.GetSteamApiKey()
-	url := fmt.Sprintf("http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key=%s&steamid=%s&format=json", apiKey, steamId)
+	url := fmt.Sprintf("http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key=%s&steamid=%s&include_appinfo=true&format=json", apiKey, steamId)
 	body, err := api.getAndValidateRequest(url)
 	if err != nil {
 		return nil, err
@@ -57,27 +57,27 @@ func (api *SteamApi) FetchApiGamesPlayer(steamId string) (*model.SteamAPIAllResp
 	return &apiResponse.Response, nil
 }
 
-// GetRequestedGamePlayedTime retrieves the total playtime for a specific game owned by a player.
-func (api *SteamApi) GetRequestedGamePlayedTime(steamId string, gameId string) (int, error) {
+// GetRequestedGame  retrieves the game owned by a specific player.
+func (api *SteamApi) GetRequestedGame(steamId string, gameId string) (model.SteamAPIAllGame, error) {
 	apiResponse, err := api.FetchApiGamesPlayer(steamId)
 	if err != nil {
-		return 0, fmt.Errorf("error fetching steam api response: %w", err)
+		return model.SteamAPIAllGame{}, fmt.Errorf("error fetching steam api response: %w", err)
 	}
 	if apiResponse.GameCount <= 0 {
-		return 0, fmt.Errorf("it seems you don't own any games")
+		return model.SteamAPIAllGame{}, fmt.Errorf("it seems you don't own any games")
 	}
 
 	gameIdInt, err := strconv.Atoi(gameId)
 	if err != nil {
-		return 0, fmt.Errorf("cannot convert game id to int: %w", err)
+		return model.SteamAPIAllGame{}, fmt.Errorf("cannot convert game id to int: %w", err)
 	}
 
 	for _, game := range apiResponse.Games {
-		if gameIdInt == game.AppID {
-			return game.PlaytimeForever, nil
+		if gameIdInt == game.Appid {
+			return game, nil
 		}
 	}
-	return 0, fmt.Errorf("requested game %s not found in player %s's played games list", gameId, steamId)
+	return model.SteamAPIAllGame{}, fmt.Errorf("requested game %s not found in player %s's played games list", gameId, steamId)
 }
 
 // FetchRecentGames retrieves the recently played games for a player.

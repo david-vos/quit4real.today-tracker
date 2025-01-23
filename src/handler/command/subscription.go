@@ -12,22 +12,28 @@ type SubscriptionCommandHandler struct {
 	SteamApi               *api.SteamApi
 	SubscriptionRepository *repository.SubscriptionRepository
 	FailsCommandHandler    *FailsCommandHandler
+	GameCommandHandler     *GameCommandHandler
 }
 
 // Add adds a new subscription for a user and retrieves the played time for the game.
 func (handler *SubscriptionCommandHandler) Add(subscription model.Subscription) error {
 	if subscription.PlatformId == "steam" {
-		playedAmount, err := handler.SteamApi.GetRequestedGamePlayedTime(
+		game, err := handler.SteamApi.GetRequestedGame(
 			subscription.PlatFormUserId, subscription.PlatformGameId)
 		if err != nil {
 			return err
+		}
+		// Adds a new game to the game table only if it does not exist already.
+		err = handler.GameCommandHandler.Add(subscription.PlatformGameId, game.Name, "steam")
+		if err != nil {
+			return fmt.Errorf("failed to add Game to game table: %v", err)
 		}
 		err = handler.SubscriptionRepository.Add(
 			subscription.DisplayName,
 			subscription.PlatformId,
 			subscription.PlatformGameId,
 			subscription.PlatFormUserId,
-			playedAmount)
+			game.PlaytimeForever)
 		if err != nil {
 			return err
 		}
