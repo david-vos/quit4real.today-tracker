@@ -10,7 +10,7 @@ type FailQueryHandler struct {
 }
 
 // GetLeaderBoard retrieves the top failure records for the leaderboard.
-func (handler *FailQueryHandler) GetLeaderBoard() ([]model.GameFailureRecord, error) {
+func (handler *FailQueryHandler) GetLeaderBoard() ([]model.FailResponse, error) {
 	failuresLeaderBoard, err := handler.FailRepository.GetTopLeaderBoard()
 	if err != nil {
 		return nil, err
