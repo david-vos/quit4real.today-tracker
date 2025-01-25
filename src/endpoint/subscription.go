@@ -44,6 +44,7 @@ func (endpoint *SubscriptionEndpoint) AddSubscription() http.HandlerFunc {
 		if err != nil {
 			logger.Debug("Error adding subscription: " + err.Error())
 			http.Error(w, "Error adding subscription: "+err.Error(), http.StatusInternalServerError)
+			return
 		}
 
 		// Respond with success

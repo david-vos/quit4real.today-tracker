@@ -35,7 +35,7 @@ func (handler *SubscriptionCommandHandler) Add(subscription model.Subscription) 
 			subscription.PlatFormUserId,
 			game.PlaytimeForever)
 		if err != nil {
-			return err
+			return fmt.Errorf("subscription most likely already exists: %v", err)
 		}
 		return nil
 	}
