@@ -30,13 +30,22 @@ func (fc *FailCron) Start() {
 }
 
 func (fc *FailCron) updateAndSendNotifySteam() {
-	//users, err := fc.UserQueryHandler.GetAll()
 	allSteamSubscriptions, err := fc.SubscriptionQueryHandler.GetAllSteam()
 	if err != nil {
 		logger.Fail("Error getting user when running cron jobs: " + err.Error())
 		return
 	}
+
+	platformUserIds := make(map[string]bool)
+
+	// Populate the map with all Steam subscriptions
 	for _, subscription := range allSteamSubscriptions {
-		fc.SubscriptionCommandHandler.UpdateFromSteamApi(subscription.PlatFormUserId)
+		platformUserId := subscription.PlatFormUserId
+		platformUserIds[platformUserId] = true
+	}
+
+	// Iterate over each unique platformUserId and update
+	for platformUserId := range platformUserIds {
+		fc.SubscriptionCommandHandler.UpdateFromSteamApi(platformUserId)
 	}
 }
