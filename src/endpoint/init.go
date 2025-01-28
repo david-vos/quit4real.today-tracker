@@ -13,6 +13,7 @@ type Endpoints struct {
 	UserEndpoint         *UserEndpoint
 	FailEndpoint         *FailEndpoint
 	SubscriptionEndpoint *SubscriptionEndpoint
+	GamesEndpoint        *GamesEndpoint
 }
 
 // getLocalIPs returns a list of local IPv4 addresses
@@ -60,9 +61,9 @@ func Init(endpoints *Endpoints) {
 	endpoints.UserEndpoint.User()
 	endpoints.FailEndpoint.Fail()
 	endpoints.SubscriptionEndpoint.Subscription()
+	endpoints.GamesEndpoint.Games()
 
 	go func() {
-		// Bind to 0.0.0.0:8080
 		listener, err := net.Listen("tcp", "0.0.0.0:8080")
 		if err != nil {
 			logger.Fail("Failed to create listener: " + err.Error())

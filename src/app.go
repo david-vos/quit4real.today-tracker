@@ -35,6 +35,7 @@ type QueryHandlers struct {
 	FailsQueryHandler        *query.FailQueryHandler
 	UserQueryHandler         *query.UserQueryHandler
 	SubscriptionQueryHandler *query.SubscriptionQueryHandler
+	GameQueryHandler         *query.GameQueryHandler
 }
 
 // Repositories holds all repositories.
@@ -98,6 +99,7 @@ func createQueryHandlers(repositories *Repositories) *QueryHandlers {
 		FailsQueryHandler:        &query.FailQueryHandler{FailRepository: repositories.FailRepository},
 		UserQueryHandler:         &query.UserQueryHandler{UserRepository: repositories.UserRepository},
 		SubscriptionQueryHandler: &query.SubscriptionQueryHandler{SubscriptionRepository: repositories.SubscriptionRepository},
+		GameQueryHandler:         &query.GameQueryHandler{GameRepository: repositories.GameRepository},
 	}
 }
 
@@ -133,6 +135,10 @@ func createEndpoints(commandHandlers *CommandHandlers, queryHandlers *QueryHandl
 		SubscriptionEndpoint: &endpoint.SubscriptionEndpoint{
 			Router:                     router,
 			SubscriptionCommandHandler: commandHandlers.SubscriptionCommandHandler,
+		},
+		GamesEndpoint: &endpoint.GamesEndpoint{
+			Router:           router,
+			GameQueryHandler: queryHandlers.GameQueryHandler,
 		},
 	}
 }
