@@ -1,5 +1,5 @@
 # Quit4Real.today
-This project is the backend for https://Quit4Real.today
+This project is the backend for http://Quit4Real.today
 The goal is simple. Track a user to see *If* they play a game they said they would not.
 
 # Suggestions
