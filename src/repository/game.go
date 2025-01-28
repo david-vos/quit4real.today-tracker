@@ -2,7 +2,9 @@ package repository
 
 import (
 	"database/sql"
+	"fmt"
 	"quit4real.today/logger"
+	"quit4real.today/src/model"
 )
 
 type GameRepository struct {
@@ -26,4 +28,31 @@ func (repository *GameRepository) Exists(id string, platformId string) bool {
 		return false
 	}
 	return true
+}
+
+func (repository *GameRepository) Search(searchParam string, platform string) ([]model.Game, error) {
+	query := `SELECT * FROM games WHERE name LIKE ? COLLATE NOCASE AND platform_id = ? LIMIT 20`
+	searchParam = "%" + searchParam + "%"
+	rows, err := repository.DatabaseImpl.FetchRows(query, searchParam, platform)
+	defer func(rows *sql.Rows) {
+		if err := closeRows(rows); err != nil {
+			logger.Fail("failed to close rows: " + err.Error())
+		}
+	}(rows)
+	if err != nil {
+		return nil, err
+	}
+
+	var games []model.Game
+	for rows.Next() {
+		game, err := model.MapGame(rows)
+		if err != nil {
+			return nil, fmt.Errorf("failed to map game row: %w", err)
+		}
+		games = append(games, game)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating rows: %w", err)
+	}
+	return games, nil
 }
