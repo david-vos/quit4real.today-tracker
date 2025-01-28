@@ -1,4 +1,4 @@
 -- Insert Steam Platform
-INSERT INTO users (id, name)
+INSERT OR IGNORE INTO users (id, name)
 VALUES ('1', 'Wazeback');
 

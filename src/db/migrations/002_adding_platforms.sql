@@ -1,4 +1,4 @@
 -- Insert Steam Platform
-INSERT INTO platforms (id, name)
+INSERT OR IGNORE INTO platforms (id, name)
 VALUES ('steam', 'Steam');
 
