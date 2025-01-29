@@ -17,17 +17,19 @@ func (repository *GameRepository) Add(id string, name string, platformId string)
 }
 
 func (repository *GameRepository) Exists(id string, platformId string) bool {
-	query := `SELECT * FROM games WHERE id = ? AND platform_id = ?`
+	query := `SELECT 1 FROM games WHERE id = ? AND platform_id = ? LIMIT 1`
 	rows, err := repository.DatabaseImpl.FetchRows(query, id, platformId)
+	if err != nil {
+		logger.Fail("failed to fetch rows: " + err.Error())
+		return false
+	}
 	defer func(rows *sql.Rows) {
-		if err := closeRows(rows); err != nil {
+		if err := rows.Close(); err != nil {
 			logger.Fail("failed to close rows: " + err.Error())
 		}
 	}(rows)
-	if err != nil {
-		return false
-	}
-	return true
+
+	return rows.Next()
 }
 
 func (repository *GameRepository) Search(searchParam string, platform string) ([]model.Game, error) {
