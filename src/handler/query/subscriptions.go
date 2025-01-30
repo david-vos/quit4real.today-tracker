@@ -16,3 +16,11 @@ func (handler *SubscriptionQueryHandler) GetAllSteam() ([]model.Subscription, er
 	}
 	return subscriptions, nil
 }
+
+func (handler *SubscriptionQueryHandler) GetAllView() ([]model.SubscriptionsView, error) {
+	subscriptions, err := handler.SubscriptionRepository.GetAllView()
+	if err != nil {
+		return nil, err
+	}
+	return subscriptions, nil
+}
