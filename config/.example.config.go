@@ -1,10 +1,20 @@
 package config
 
 import (
+	"os"
 	"quit4real.today/logger"
 )
 
-func GetDBPath() string          { return "database.db" }
-func GetDBMigrationPath() string { return "src/db/migrations" }
-func GetSteamApiKey() string     { return "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" }
-func InitLogger()                { logger.InitLogger("app.log") }
+func GetDBPath() string {
+	dbPath := os.Getenv("DB_PATH")
+	if dbPath == "" {
+		dbPath = "/app/data/database.db" // Default if not set
+	}
+	return dbPath
+}
+
+func GetDBMigrationPath() string {
+	return "/app/src/db/migrations" // Migrations remain unchanged
+}
+func GetSteamApiKey() string { return "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" }
+func InitLogger()            { logger.InitLogger("/app/logs/app.log") }

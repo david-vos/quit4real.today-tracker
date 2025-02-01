@@ -42,38 +42,38 @@ func (repository *FailRepository) Get(userID string) ([]model.GameFailureRecord,
 func (repository *FailRepository) GetTopLeaderBoard() ([]model.FailResponse, error) {
 	query := `WITH RankedFails AS (
 		SELECT
-			gfr.id,
-			gfr.display_name,
-			gfr.platform_id,
-			gfr.platform_game_id,
-			gfr.platform_user_id,
-			gfr.duration_minutes,
-			gfr.reason,
-			gfr.timestamp,
-			g.name AS game_name, -- Select the game name
-			ROW_NUMBER() OVER (PARTITION BY gfr.platform_user_id ORDER BY gfr.timestamp DESC) AS rn
-		FROM
-        	game_failure_records gfr
-    	JOIN
-        	games g ON gfr.platform_game_id = g.id AND gfr.platform_id = g.platform_id -- Join with games table
+	gfr.id,
+		gfr.display_name,
+		gfr.platform_id,
+		gfr.platform_game_id,
+		gfr.platform_user_id,
+		gfr.duration_minutes,
+		gfr.reason,
+		gfr.timestamp,
+		g.name AS game_name,
+	ROW_NUMBER() OVER (PARTITION BY gfr.platform_user_id, gfr.platform_game_id ORDER BY gfr.timestamp DESC) AS rn
+	FROM
+	game_failure_records gfr
+	JOIN
+	games g ON gfr.platform_game_id = g.id AND gfr.platform_id = g.platform_id
 	)
-		SELECT
-			id,
-			display_name,
-			platform_id,
-			platform_game_id,
-			platform_user_id,
-			duration_minutes,
-			reason,
-			timestamp,
-			game_name -- Select the game name
-		FROM
-			RankedFails
-		WHERE
-			rn = 1
-		ORDER BY
-			timestamp DESC;
-	`
+	SELECT
+	id,
+		display_name,
+		platform_id,
+		platform_game_id,
+		platform_user_id,
+		duration_minutes,
+		reason,
+		timestamp,
+		game_name
+	FROM
+	RankedFails
+	WHERE
+	rn = 1 
+	ORDER BY
+	timestamp DESC;`
+
 	rows, err := repository.DatabaseImpl.FetchRows(query)
 	if err != nil {
 		return []model.FailResponse{}, fmt.Errorf("failed to parse GetFailsTopLeaderBoard: %w", err)
