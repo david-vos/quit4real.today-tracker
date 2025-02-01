@@ -6,19 +6,49 @@ import (
 	"net/http"
 	"quit4real.today/logger"
 	"quit4real.today/src/handler/command"
+	"quit4real.today/src/handler/query"
 	"quit4real.today/src/model"
 )
 
 type SubscriptionEndpoint struct {
 	Router                     *mux.Router
 	SubscriptionCommandHandler *command.SubscriptionCommandHandler
+	SubscriptionQueryHandler   *query.SubscriptionQueryHandler
 }
 
 // Subscription handles the subscription-related endpoints.
 func (endpoint *SubscriptionEndpoint) Subscription() {
 	logger.Info("Starting subscription endpoints")
 	endpoint.Router.HandleFunc("/subscriptions", endpoint.AddSubscription()).Methods("POST")
+	endpoint.Router.HandleFunc("/subscriptions", endpoint.GetSubscriptions()).Methods("GET")
 	logger.Info("Subscription endpoints started")
+}
+
+func (endpoint *SubscriptionEndpoint) GetSubscriptions() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		logger.Info("Getting all subscriptions")
+		if r.Method != "GET" {
+			logger.Debug("Invalid method")
+			http.Error(w, "Invalid method", http.StatusMethodNotAllowed)
+			return
+		}
+
+		// Currently only steam supported
+		subscriptions, err := endpoint.SubscriptionQueryHandler.GetAllView()
+		if err != nil {
+			logger.Debug("Error getting all subscriptions")
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+
+		if err := json.NewEncoder(w).Encode(subscriptions); err != nil {
+			logger.Fail(err.Error())
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+	}
 }
 
 // AddSubscription handles adding a subscription for a user.

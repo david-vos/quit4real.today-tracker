@@ -87,3 +87,26 @@ func (repository *SubscriptionRepository) GetAllSteam() ([]model.Subscription, e
 	}
 	return subscriptions, nil
 }
+
+func (repository *SubscriptionRepository) GetAllView() ([]model.SubscriptionsView, error) {
+	query := "SELECT PS.*, g.name FROM platform_subscriptions as PS LEFT JOIN games g on g.id = PS.platform_game_id"
+	rows, err := repository.DatabaseImpl.FetchRows(query)
+	if err != nil {
+		return nil, err
+	}
+	defer func(rows *sql.Rows) {
+		if err := closeRows(rows); err != nil {
+			logger.Fail("failed to close rows: " + err.Error())
+		}
+	}(rows)
+
+	var subscriptions []model.SubscriptionsView
+	for rows.Next() {
+		subscription, err := model.MapSubscriptionsView(rows)
+		if err != nil {
+			return nil, err
+		}
+		subscriptions = append(subscriptions, subscription)
+	}
+	return subscriptions, nil
+}

@@ -42,6 +42,11 @@ func Connect(dbPath string) (*sql.DB, error) {
 }
 
 func ApplyMigrations(db *sql.DB, migrationsPath string) error {
+	_, err := db.Exec(`CREATE TABLE IF NOT EXISTS migrations (id TEXT PRIMARY KEY);`)
+	if err != nil {
+		return fmt.Errorf("failed to create migrations table: %v", err)
+	}
+
 	files, err := os.ReadDir(migrationsPath)
 	if err != nil {
 		return fmt.Errorf("failed to read migrations directory: %v", err)
@@ -57,16 +62,29 @@ func ApplyMigrations(db *sql.DB, migrationsPath string) error {
 			continue
 		}
 
-		migrationPath := filepath.Join(migrationsPath, file.Name())
-		content, err := os.ReadFile(migrationPath)
-		if err != nil {
-			return fmt.Errorf("failed to read migration file %s: %v", file.Name(), err)
+		migrationName := file.Name()
+		var exists string
+		err := db.QueryRow(`SELECT id FROM migrations WHERE id = ?`, migrationName).Scan(&exists)
+		if err == nil {
+			log.Printf("Skipping already applied migration: %s", migrationName)
+			continue
 		}
 
-		log.Printf("Applying migration: %s", file.Name())
+		migrationPath := filepath.Join(migrationsPath, migrationName)
+		content, err := os.ReadFile(migrationPath)
+		if err != nil {
+			return fmt.Errorf("failed to read migration file %s: %v", migrationName, err)
+		}
+
+		log.Printf("Applying migration: %s", migrationName)
 		_, err = db.Exec(string(content))
 		if err != nil {
-			return fmt.Errorf("failed to apply migration %s: %v", file.Name(), err)
+			return fmt.Errorf("failed to apply migration %s: %v", migrationName, err)
+		}
+
+		_, err = db.Exec(`INSERT INTO migrations (id) VALUES (?);`, migrationName)
+		if err != nil {
+			return fmt.Errorf("failed to record migration %s: %v", migrationName, err)
 		}
 	}
 

@@ -7,9 +7,7 @@ services:
       - "8080:8080"
     container_name: quit4real
     volumes:
-      - app-data:/app
+      - ./data:/app/data        # Persist database
+      - ./logs:/app/logs        # Mount logs directory instead of a file
     working_dir: /app
     command: [ "./quit4real.today" ]
-
-volumes:
-  app-data:

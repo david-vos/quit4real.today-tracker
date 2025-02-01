@@ -4,6 +4,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"path/filepath"
 	"runtime"
 	"strings"
 )
@@ -29,6 +30,13 @@ var Logger *CustomLogger
 
 // NewCustomLogger creates a new CustomLogger with the specified log level.
 func NewCustomLogger(level LogLevel, logFile string) *CustomLogger {
+	// Ensure the log directory exists
+	logDir := filepath.Dir(logFile) // Correct function to get the directory part of the log file path
+	if err := os.MkdirAll(logDir, 0755); err != nil {
+		log.Fatalf("error creating log directory: %v", err)
+	}
+
+	// Open or create the log file
 	file, err := os.OpenFile(logFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
 		log.Fatalf("error opening log file: %v", err)

@@ -1,6 +1,10 @@
 .idea
+.vsc/
 
 config/config.go
+
+data/
+logs/
 
 app.log
 output.log
