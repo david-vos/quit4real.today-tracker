@@ -135,6 +135,7 @@ func createEndpoints(commandHandlers *CommandHandlers, queryHandlers *QueryHandl
 		SubscriptionEndpoint: &endpoint.SubscriptionEndpoint{
 			Router:                     router,
 			SubscriptionCommandHandler: commandHandlers.SubscriptionCommandHandler,
+			SubscriptionQueryHandler:   queryHandlers.SubscriptionQueryHandler,
 		},
 		GamesEndpoint: &endpoint.GamesEndpoint{
 			Router:           router,
