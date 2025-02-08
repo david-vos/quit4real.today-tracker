@@ -7,6 +7,7 @@ import (
 	"quit4real.today/logger"
 	"quit4real.today/src/handler/command"
 	"quit4real.today/src/handler/query"
+	"quit4real.today/src/handler/service"
 	"quit4real.today/src/model"
 )
 
@@ -14,13 +15,16 @@ type SubscriptionEndpoint struct {
 	Router                     *mux.Router
 	SubscriptionCommandHandler *command.SubscriptionCommandHandler
 	SubscriptionQueryHandler   *query.SubscriptionQueryHandler
+	AuthService                *service.AuthService
 }
 
 // Subscription handles the subscription-related endpoints.
 func (endpoint *SubscriptionEndpoint) Subscription() {
 	logger.Info("Starting subscription endpoints")
 	endpoint.Router.HandleFunc("/subscriptions", endpoint.AddSubscription()).Methods("POST")
-	endpoint.Router.HandleFunc("/subscriptions", endpoint.GetSubscriptions()).Methods("GET")
+	endpoint.Router.Handle("/subscriptions", endpoint.AuthService.AuthMiddleware(
+		endpoint.GetSubscriptions()),
+	).Methods("GET")
 	logger.Info("Subscription endpoints started")
 }
 

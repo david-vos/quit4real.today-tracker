@@ -18,3 +18,5 @@ func GetDBMigrationPath() string {
 }
 func GetSteamApiKey() string { return "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" }
 func InitLogger()            { logger.InitLogger("/app/logs/app.log") }
+
+func jwtSecret() []byte { return []byte("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx") }
