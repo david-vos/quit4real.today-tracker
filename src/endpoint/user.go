@@ -25,6 +25,7 @@ func (endpoint *UserEndpoint) User() {
 	logger.Info("Trying to start the user endpoints")
 	endpoint.Router.HandleFunc("/users", endpoint.RegisterHandler()).Methods("POST")
 	endpoint.Router.HandleFunc("/users/${userName}/steamId", endpoint.GetSteamId()).Methods("GET")
+	endpoint.Router.HandleFunc("/users/login", endpoint.LoginHandler()).Methods("POST")
 	logger.Info("User endpoints started")
 }
 
@@ -115,9 +116,11 @@ func (endpoint *UserEndpoint) RegisterHandler() http.HandlerFunc {
 			Name:     creds.Username,
 			Password: string(hashedPassword),
 		}
-		var errAddUser = endpoint.UserCommandHandler.Add(user)
+		errAddUser := endpoint.UserCommandHandler.Add(user)
 		if errAddUser != nil {
-			logger.Debug("Error adding user: " + err.Error())
+			logger.Debug("Error adding user: " + errAddUser.Error())
+			http.Error(w, "Error saving user", http.StatusInternalServerError)
+			return
 		}
 
 		w.WriteHeader(http.StatusCreated)

@@ -138,6 +138,7 @@ func createEndpoints(commandHandlers *CommandHandlers, queryHandlers *QueryHandl
 			Router:                     router,
 			SteamApi:                   steamApi,
 			UserCommandHandler:         commandHandlers.UserCommandHandler,
+			UserQueryHandler:           queryHandlers.UserQueryHandler,
 			SubscriptionCommandHandler: commandHandlers.SubscriptionCommandHandler,
 			AuthService:                services.AuthService,
 		},
