@@ -8,6 +8,7 @@ import (
 	"quit4real.today/src/endpoint"
 	"quit4real.today/src/handler/command"
 	"quit4real.today/src/handler/query"
+	"quit4real.today/src/handler/service"
 	"quit4real.today/src/repository"
 )
 
@@ -20,6 +21,10 @@ type App struct {
 	Repositories    *Repositories
 	Jobs            *cron.Jobs
 	SteamApi        *api.SteamApi
+}
+
+type Services struct {
+	AuthService *service.AuthService
 }
 
 // CommandHandlers holds all command handlers.
@@ -54,7 +59,8 @@ func AppInit(dataBaseConnection *sql.DB) *App {
 	commandHandlers := createCommandHandlers(repositories, steamApi)
 	queryHandlers := createQueryHandlers(repositories)
 	jobs := createJobs(queryHandlers, commandHandlers)
-	endpoints := createEndpoints(commandHandlers, queryHandlers, steamApi)
+	services := createServices()
+	endpoints := createEndpoints(commandHandlers, queryHandlers, steamApi, services)
 
 	return &App{
 		DatabaseImpl:    databaseImpl,
@@ -117,7 +123,13 @@ func createSteamApi() *api.SteamApi {
 	return &api.SteamApi{}
 }
 
-func createEndpoints(commandHandlers *CommandHandlers, queryHandlers *QueryHandlers, steamApi *api.SteamApi) *endpoint.Endpoints {
+func createServices() *Services {
+	return &Services{
+		AuthService: &service.AuthService{},
+	}
+}
+
+func createEndpoints(commandHandlers *CommandHandlers, queryHandlers *QueryHandlers, steamApi *api.SteamApi, services *Services) *endpoint.Endpoints {
 	router := mux.NewRouter()
 
 	return &endpoint.Endpoints{
@@ -126,7 +138,9 @@ func createEndpoints(commandHandlers *CommandHandlers, queryHandlers *QueryHandl
 			Router:                     router,
 			SteamApi:                   steamApi,
 			UserCommandHandler:         commandHandlers.UserCommandHandler,
+			UserQueryHandler:           queryHandlers.UserQueryHandler,
 			SubscriptionCommandHandler: commandHandlers.SubscriptionCommandHandler,
+			AuthService:                services.AuthService,
 		},
 		FailEndpoint: &endpoint.FailEndpoint{
 			Router:           router,
@@ -136,6 +150,7 @@ func createEndpoints(commandHandlers *CommandHandlers, queryHandlers *QueryHandl
 			Router:                     router,
 			SubscriptionCommandHandler: commandHandlers.SubscriptionCommandHandler,
 			SubscriptionQueryHandler:   queryHandlers.SubscriptionQueryHandler,
+			AuthService:                services.AuthService,
 		},
 		GamesEndpoint: &endpoint.GamesEndpoint{
 			Router:           router,

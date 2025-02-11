@@ -2,6 +2,7 @@ package repository
 
 import (
 	"database/sql"
+	"fmt"
 	"quit4real.today/logger"
 	"quit4real.today/src/model"
 )
@@ -36,7 +37,29 @@ func (repository *UserRepository) GetAll() ([]model.User, error) {
 }
 
 func (repository *UserRepository) Add(user model.User) error {
-	query := "INSERT INTO users (name) VALUES (?)"
-	err := repository.DatabaseImpl.ExecuteQuery(query, user.Name)
+	query := "INSERT INTO users (name, password) VALUES (?, ?)"
+	err := repository.DatabaseImpl.ExecuteQuery(query, user.Name, user.Password)
 	return err
+}
+
+func (repository *UserRepository) GetById(username string) (model.User, error) {
+	query := `SELECT * FROM users WHERE name=?;`
+	rows, err := repository.DatabaseImpl.FetchRows(query, username)
+	if err != nil {
+		return model.User{}, err
+	}
+	defer func(rows *sql.Rows) {
+		err := closeRows(rows)
+		if err != nil {
+			logger.Fail(err.Error())
+		}
+	}(rows)
+	for rows.Next() {
+		user, err := model.MapUser(rows)
+		if err != nil {
+			return model.User{}, err
+		}
+		return user, nil
+	}
+	return model.User{}, fmt.Errorf("no user found with username %s", username)
 }
