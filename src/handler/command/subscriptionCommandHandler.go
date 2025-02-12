@@ -3,13 +3,13 @@ package command
 import (
 	"fmt"
 	"quit4real.today/logger"
-	"quit4real.today/src/api"
+	"quit4real.today/src/handler/service"
 	"quit4real.today/src/model"
 	"quit4real.today/src/repository"
 )
 
 type SubscriptionCommandHandler struct {
-	SteamApi               *api.SteamApi
+	SteamService           *service.SteamService
 	SubscriptionRepository *repository.SubscriptionRepository
 	FailsCommandHandler    *FailsCommandHandler
 	GameCommandHandler     *GameCommandHandler
@@ -18,7 +18,7 @@ type SubscriptionCommandHandler struct {
 // Add adds a new subscription for a user and retrieves the played time for the game.
 func (handler *SubscriptionCommandHandler) Add(subscription model.Subscription) error {
 	if subscription.PlatformId == "steam" {
-		game, err := handler.SteamApi.GetRequestedGame(
+		game, err := handler.SteamService.GetRequestedGame(
 			subscription.PlatFormUserId, subscription.PlatformGameId)
 		if err != nil {
 			return err
@@ -44,7 +44,7 @@ func (handler *SubscriptionCommandHandler) Add(subscription model.Subscription) 
 
 // UpdateFromSteamApi updates the user's subscriptions based on recent games fetched from the Steam API.
 func (handler *SubscriptionCommandHandler) UpdateFromSteamApi(steamId string) {
-	apiResponse, err := handler.SteamApi.FetchRecentGames(steamId)
+	apiResponse, err := handler.SteamService.FetchRecentGames(steamId)
 	if err != nil {
 		logger.Fail("failed to fetch player information for player: " + steamId + " | ERROR: " + err.Error())
 		return
@@ -56,7 +56,7 @@ func (handler *SubscriptionCommandHandler) UpdateFromSteamApi(steamId string) {
 		return
 	}
 
-	failedGames := handler.SteamApi.GetOnlyFailed(apiResponse, trackedGamesByUser)
+	failedGames := handler.SteamService.GetOnlyFailed(apiResponse, trackedGamesByUser)
 
 	for _, failInfo := range failedGames {
 

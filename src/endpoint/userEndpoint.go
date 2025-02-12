@@ -5,7 +5,6 @@ import (
 	"github.com/gorilla/mux"
 	"net/http"
 	"quit4real.today/logger"
-	"quit4real.today/src/api"
 	"quit4real.today/src/handler/command"
 	"quit4real.today/src/handler/query"
 	"quit4real.today/src/handler/service"
@@ -14,7 +13,7 @@ import (
 
 type UserEndpoint struct {
 	Router                     *mux.Router
-	SteamApi                   *api.SteamApi
+	SteamService               *service.SteamService
 	UserCommandHandler         *command.UserCommandHandler
 	UserQueryHandler           *query.UserQueryHandler
 	SubscriptionCommandHandler *command.SubscriptionCommandHandler
@@ -38,7 +37,7 @@ func (endpoint *UserEndpoint) GetSteamId() http.HandlerFunc {
 			return
 		}
 
-		steamId, err := endpoint.SteamApi.GetSteamIdFromVanityName(userID)
+		steamId, err := endpoint.SteamService.GetSteamIdFromVanityName(userID)
 		if err != nil {
 			logger.Debug("Error getting steam id: " + err.Error())
 			http.Error(w, "Error getting steam id", http.StatusNoContent)

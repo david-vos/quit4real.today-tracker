@@ -1,4 +1,4 @@
-package api
+package service
 
 import (
 	"encoding/json"
@@ -11,7 +11,7 @@ import (
 	"strconv"
 )
 
-type SteamApi struct{}
+type SteamService struct{}
 
 // MatchedDbGameToSteamGameInfo holds the mapping between a database tracked game and a Steam game.
 type MatchedDbGameToSteamGameInfo struct {
@@ -21,7 +21,7 @@ type MatchedDbGameToSteamGameInfo struct {
 }
 
 // GetSteamIdFromVanityName resolves a vanity name to a Steam ID.
-func (api *SteamApi) GetSteamIdFromVanityName(vanityName string) (string, error) {
+func (api *SteamService) GetSteamIdFromVanityName(vanityName string) (string, error) {
 	apiKey := config.GetSteamApiKey()
 	url := fmt.Sprintf("https://api.steampowered.com/ISteamUser/ResolveVanityURL/v0001/?key=%s&vanityurl=%s", apiKey, vanityName)
 	body, err := api.getAndValidateRequest(url)
@@ -41,7 +41,7 @@ func (api *SteamApi) GetSteamIdFromVanityName(vanityName string) (string, error)
 }
 
 // FetchApiGamesPlayer retrieves all games owned by a player.
-func (api *SteamApi) FetchApiGamesPlayer(steamId string) (*model.SteamAPIAllResponse, error) {
+func (api *SteamService) FetchApiGamesPlayer(steamId string) (*model.SteamAPIAllResponse, error) {
 	apiKey := config.GetSteamApiKey()
 	url := fmt.Sprintf("http://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key=%s&steamid=%s&include_appinfo=true&format=json", apiKey, steamId)
 	body, err := api.getAndValidateRequest(url)
@@ -58,7 +58,7 @@ func (api *SteamApi) FetchApiGamesPlayer(steamId string) (*model.SteamAPIAllResp
 }
 
 // GetRequestedGame  retrieves the game owned by a specific player.
-func (api *SteamApi) GetRequestedGame(steamId string, gameId string) (model.SteamAPIAllGame, error) {
+func (api *SteamService) GetRequestedGame(steamId string, gameId string) (model.SteamAPIAllGame, error) {
 	apiResponse, err := api.FetchApiGamesPlayer(steamId)
 	if err != nil {
 		return model.SteamAPIAllGame{}, fmt.Errorf("error fetching steam api response: %w", err)
@@ -81,7 +81,7 @@ func (api *SteamApi) GetRequestedGame(steamId string, gameId string) (model.Stea
 }
 
 // FetchRecentGames retrieves the recently played games for a player.
-func (api *SteamApi) FetchRecentGames(steamId string) (*model.SteamApiResponse, error) {
+func (api *SteamService) FetchRecentGames(steamId string) (*model.SteamApiResponse, error) {
 	apiKey := config.GetSteamApiKey()
 	url := fmt.Sprintf("http://api.steampowered.com/IPlayerService/GetRecentlyPlayedGames/v0001/?key=%s&steamid=%s&format=json", apiKey, steamId)
 	body, err := api.getAndValidateRequest(url)
@@ -98,7 +98,7 @@ func (api *SteamApi) FetchRecentGames(steamId string) (*model.SteamApiResponse, 
 }
 
 // getAndValidateRequest performs an HTTP GET request and validates the response.
-func (api *SteamApi) getAndValidateRequest(url string) ([]byte, error) {
+func (api *SteamService) getAndValidateRequest(url string) ([]byte, error) {
 	resp, err := http.Get(url)
 	if err != nil {
 		return nil, fmt.Errorf("error making HTTP request: %w", err)
@@ -118,7 +118,7 @@ func (api *SteamApi) getAndValidateRequest(url string) ([]byte, error) {
 }
 
 // GetOnlyFailed filters out the games that have failed based on the API response and tracked games.
-func (api *SteamApi) GetOnlyFailed(
+func (api *SteamService) GetOnlyFailed(
 	apiResponse *model.SteamApiResponse,
 	trackedGamesByUser []model.Subscription,
 ) []MatchedDbGameToSteamGameInfo {
