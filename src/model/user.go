@@ -5,6 +5,7 @@ import "database/sql"
 type User struct {
 	ID       int    `json:"id"`   // Using string to match the database schema
 	Name     string `json:"name"` // Username
+	SteamID  string `json:"steamid"`
 	Password string `json:"password"`
 }
 
@@ -19,6 +20,7 @@ func MapUser(rows *sql.Rows) (User, error) {
 		&user.ID,
 		&user.Name,
 		&user.Password,
+		&user.SteamID,
 	); err != nil {
 		return User{}, err
 	}
