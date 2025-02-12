@@ -5,7 +5,6 @@ import (
 	"github.com/gorilla/mux"
 	"net/http"
 	"quit4real.today/logger"
-	"quit4real.today/src/api"
 	"quit4real.today/src/handler/command"
 	"quit4real.today/src/handler/query"
 	"quit4real.today/src/handler/service"
@@ -14,7 +13,7 @@ import (
 
 type UserEndpoint struct {
 	Router                     *mux.Router
-	SteamApi                   *api.SteamApi
+	SteamApi                   *service.SteamService
 	UserCommandHandler         *command.UserCommandHandler
 	UserQueryHandler           *query.UserQueryHandler
 	SubscriptionCommandHandler *command.SubscriptionCommandHandler

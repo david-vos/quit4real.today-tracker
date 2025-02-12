@@ -3,13 +3,13 @@ package command
 import (
 	"fmt"
 	"quit4real.today/logger"
-	"quit4real.today/src/api"
+	"quit4real.today/src/handler/service"
 	"quit4real.today/src/model"
 	"quit4real.today/src/repository"
 )
 
 type SubscriptionCommandHandler struct {
-	SteamApi               *api.SteamApi
+	SteamApi               *service.SteamService
 	SubscriptionRepository *repository.SubscriptionRepository
 	FailsCommandHandler    *FailsCommandHandler
 	GameCommandHandler     *GameCommandHandler

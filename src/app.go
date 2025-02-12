@@ -3,7 +3,6 @@ package src
 import (
 	"database/sql"
 	"github.com/gorilla/mux"
-	"quit4real.today/src/api"
 	"quit4real.today/src/cron"
 	"quit4real.today/src/endpoint"
 	"quit4real.today/src/handler/command"
@@ -20,7 +19,7 @@ type App struct {
 	QueryHandlers   *QueryHandlers
 	Repositories    *Repositories
 	Jobs            *cron.Jobs
-	SteamApi        *api.SteamApi
+	SteamApi        *service.SteamService
 }
 
 type Services struct {
@@ -82,7 +81,7 @@ func createRepositories(databaseImpl *repository.DatabaseImpl) *Repositories {
 	}
 }
 
-func createCommandHandlers(repositories *Repositories, steamApi *api.SteamApi) *CommandHandlers {
+func createCommandHandlers(repositories *Repositories, steamApi *service.SteamService) *CommandHandlers {
 	failsHandler := &command.FailsCommandHandler{FailRepository: repositories.FailRepository}
 	gameHandler := &command.GameCommandHandler{GameRepository: repositories.GameRepository}
 	subscriptionCommandHandler := &command.SubscriptionCommandHandler{
@@ -119,8 +118,8 @@ func createJobs(queryHandlers *QueryHandlers, commandHandlers *CommandHandlers) 
 	}
 }
 
-func createSteamApi() *api.SteamApi {
-	return &api.SteamApi{}
+func createSteamApi() *service.SteamService {
+	return &service.SteamService{}
 }
 
 func createServices() *Services {
@@ -129,7 +128,7 @@ func createServices() *Services {
 	}
 }
 
-func createEndpoints(commandHandlers *CommandHandlers, queryHandlers *QueryHandlers, steamApi *api.SteamApi, services *Services) *endpoint.Endpoints {
+func createEndpoints(commandHandlers *CommandHandlers, queryHandlers *QueryHandlers, steamApi *service.SteamService, services *Services) *endpoint.Endpoints {
 	router := mux.NewRouter()
 
 	return &endpoint.Endpoints{
