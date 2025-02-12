@@ -19,11 +19,12 @@ type App struct {
 	QueryHandlers   *QueryHandlers
 	Repositories    *Repositories
 	Jobs            *cron.Jobs
-	SteamApi        *service.SteamService
+	Services        *Services
 }
 
 type Services struct {
-	AuthService *service.AuthService
+	SteamService *service.SteamService
+	AuthService  *service.AuthService
 }
 
 // CommandHandlers holds all command handlers.
@@ -53,13 +54,12 @@ type Repositories struct {
 // AppInit initializes the application with the provided database connection.
 func AppInit(dataBaseConnection *sql.DB) *App {
 	databaseImpl := &repository.DatabaseImpl{DB: dataBaseConnection}
+	services := createServices()
 	repositories := createRepositories(databaseImpl)
-	steamApi := createSteamApi()
-	commandHandlers := createCommandHandlers(repositories, steamApi)
+	commandHandlers := createCommandHandlers(repositories, services)
 	queryHandlers := createQueryHandlers(repositories)
 	jobs := createJobs(queryHandlers, commandHandlers)
-	services := createServices()
-	endpoints := createEndpoints(commandHandlers, queryHandlers, steamApi, services)
+	endpoints := createEndpoints(commandHandlers, queryHandlers, services)
 
 	return &App{
 		DatabaseImpl:    databaseImpl,
@@ -67,8 +67,8 @@ func AppInit(dataBaseConnection *sql.DB) *App {
 		CommandHandlers: commandHandlers,
 		QueryHandlers:   queryHandlers,
 		Jobs:            jobs,
-		SteamApi:        steamApi,
 		Endpoints:       endpoints,
+		Services:        services,
 	}
 }
 
@@ -81,11 +81,11 @@ func createRepositories(databaseImpl *repository.DatabaseImpl) *Repositories {
 	}
 }
 
-func createCommandHandlers(repositories *Repositories, steamApi *service.SteamService) *CommandHandlers {
+func createCommandHandlers(repositories *Repositories, services *Services) *CommandHandlers {
 	failsHandler := &command.FailsCommandHandler{FailRepository: repositories.FailRepository}
 	gameHandler := &command.GameCommandHandler{GameRepository: repositories.GameRepository}
 	subscriptionCommandHandler := &command.SubscriptionCommandHandler{
-		SteamApi:               steamApi,
+		SteamService:           services.SteamService,
 		SubscriptionRepository: repositories.SubscriptionRepository,
 		FailsCommandHandler:    failsHandler,
 		GameCommandHandler:     gameHandler,
@@ -118,24 +118,21 @@ func createJobs(queryHandlers *QueryHandlers, commandHandlers *CommandHandlers) 
 	}
 }
 
-func createSteamApi() *service.SteamService {
-	return &service.SteamService{}
-}
-
 func createServices() *Services {
 	return &Services{
-		AuthService: &service.AuthService{},
+		SteamService: &service.SteamService{},
+		AuthService:  &service.AuthService{},
 	}
 }
 
-func createEndpoints(commandHandlers *CommandHandlers, queryHandlers *QueryHandlers, steamApi *service.SteamService, services *Services) *endpoint.Endpoints {
+func createEndpoints(commandHandlers *CommandHandlers, queryHandlers *QueryHandlers, services *Services) *endpoint.Endpoints {
 	router := mux.NewRouter()
 
 	return &endpoint.Endpoints{
 		Router: router,
 		UserEndpoint: &endpoint.UserEndpoint{
 			Router:                     router,
-			SteamApi:                   steamApi,
+			SteamService:               services.SteamService,
 			UserCommandHandler:         commandHandlers.UserCommandHandler,
 			UserQueryHandler:           queryHandlers.UserQueryHandler,
 			SubscriptionCommandHandler: commandHandlers.SubscriptionCommandHandler,
