@@ -3,7 +3,6 @@ package endpoint
 import (
 	"encoding/json"
 	"github.com/gorilla/mux"
-	"github.com/yohcop/openid-go"
 	"net/http"
 	"quit4real.today/config"
 	"quit4real.today/logger"
@@ -28,7 +27,7 @@ func (endpoint *UserEndpoint) User() {
 	endpoint.Router.HandleFunc("/users/{userName}/steamId", endpoint.GetSteamId()).Methods("GET")
 	endpoint.Router.HandleFunc("/users/login", endpoint.LoginHandler()).Methods("POST")
 
-	endpoint.Router.HandleFunc("/api/auth/steam", endpoint.SteamLoginHandler())
+	endpoint.Router.HandleFunc("/api/auth/steam", endpoint.AuthService.AuthMiddleware(endpoint.SteamLoginHandler()))
 	endpoint.Router.HandleFunc("/api/auth/steam/callback", endpoint.SteamCallbackHandler())
 	logger.Info("User endpoints started")
 }
@@ -139,13 +138,11 @@ func (endpoint *UserEndpoint) RegisterHandler() http.HandlerFunc {
 	}
 }
 
-var openID = openid.NewOpenID(http.DefaultClient)
-
 func (endpoint *UserEndpoint) SteamLoginHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		callbackURL := config.BackendUrl() + "/api/auth/steam/callback"
 
-		redirectURL, err := openID.RedirectURL("https://steamcommunity.com/openid", callbackURL, "")
+		redirectURL, err := endpoint.AuthService.OpenID.RedirectURL("https://steamcommunity.com/openid", callbackURL, "")
 		if err != nil {
 			http.Error(w, "OpenID Auth error", http.StatusInternalServerError)
 			return
@@ -160,7 +157,7 @@ func (endpoint *UserEndpoint) SteamCallbackHandler() http.HandlerFunc {
 		fullURL := "https://" + r.Host + r.RequestURI // Use r.RequestURI
 		logger.Info("Full URL: " + fullURL)           // Log the full URL
 
-		id, err := openID.Verify(fullURL, nil, nil)
+		id, err := endpoint.AuthService.OpenID.Verify(fullURL, nil, nil)
 		if err != nil {
 			logger.Fail("Failed to verify OpenID: " + err.Error()) // Log the error
 			http.Error(w, "Failed to verify OpenID", http.StatusUnauthorized)
@@ -170,6 +167,24 @@ func (endpoint *UserEndpoint) SteamCallbackHandler() http.HandlerFunc {
 		// Extract SteamID from the OpenID URL
 		steamID := id[len("https://steamcommunity.com/openid/id/"):]
 		logger.Info("Steam ID verified: " + steamID)
+
+		tokenString := r.Header.Get("Authorization")
+		username, err := endpoint.AuthService.GetFieldFromJWT(tokenString, "username")
+		if err != nil {
+			http.Error(w, "Invalid token", http.StatusUnauthorized)
+			return
+		}
+		user, err := endpoint.UserQueryHandler.GetById(username)
+		if err != nil {
+			http.Error(w, "User not found", http.StatusNotFound)
+			return
+		}
+		user.SteamID = steamID
+		err = endpoint.UserCommandHandler.Update(user)
+		if err != nil {
+			http.Error(w, "Error updating user", http.StatusInternalServerError)
+			return
+		}
 
 		w.Header().Set("Content-Type", "application/json")
 		err = json.NewEncoder(w).Encode(map[string]string{"steamID": steamID})

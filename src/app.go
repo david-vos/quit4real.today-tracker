@@ -3,6 +3,8 @@ package src
 import (
 	"database/sql"
 	"github.com/gorilla/mux"
+	"github.com/yohcop/openid-go"
+	"net/http"
 	"quit4real.today/src/cron"
 	"quit4real.today/src/endpoint"
 	"quit4real.today/src/handler/command"
@@ -121,7 +123,9 @@ func createJobs(queryHandlers *QueryHandlers, commandHandlers *CommandHandlers) 
 func createServices() *Services {
 	return &Services{
 		SteamService: &service.SteamService{},
-		AuthService:  &service.AuthService{},
+		AuthService: &service.AuthService{
+			OpenID: *openid.NewOpenID(http.DefaultClient),
+		},
 	}
 }
 
