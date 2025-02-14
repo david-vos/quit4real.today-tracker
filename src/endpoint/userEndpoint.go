@@ -3,14 +3,14 @@ package endpoint
 import (
 	"encoding/json"
 	"github.com/gorilla/mux"
-	"io"
+	"github.com/yohcop/openid-go"
 	"net/http"
+	"quit4real.today/config"
 	"quit4real.today/logger"
 	"quit4real.today/src/handler/command"
 	"quit4real.today/src/handler/query"
 	"quit4real.today/src/handler/service"
 	"quit4real.today/src/model"
-	"strings"
 )
 
 type UserEndpoint struct {
@@ -25,10 +25,11 @@ type UserEndpoint struct {
 func (endpoint *UserEndpoint) User() {
 	logger.Info("Trying to start the user endpoints")
 	endpoint.Router.HandleFunc("/users", endpoint.RegisterHandler()).Methods("POST")
-	endpoint.Router.HandleFunc("/users/${userName}/steamId", endpoint.GetSteamId()).Methods("GET")
+	endpoint.Router.HandleFunc("/users/{userName}/steamId", endpoint.GetSteamId()).Methods("GET")
 	endpoint.Router.HandleFunc("/users/login", endpoint.LoginHandler()).Methods("POST")
 
-	http.HandleFunc("/api/auth/steam", endpoint.LinkSteamAccountHandler())
+	endpoint.Router.HandleFunc("/api/auth/steam", endpoint.SteamLoginHandler())
+	endpoint.Router.HandleFunc("/api/auth/steam/callback", endpoint.SteamCallbackHandler())
 	logger.Info("User endpoints started")
 }
 
@@ -49,7 +50,12 @@ func (endpoint *UserEndpoint) GetSteamId() http.HandlerFunc {
 		}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		_, err = w.Write([]byte(steamId))
+		err = json.NewEncoder(w).Encode(map[string]string{"steamId": steamId})
+		if err != nil {
+			http.Error(w, "Error getting steam id", http.StatusNoContent)
+			return
+		}
+
 	}
 }
 
@@ -69,6 +75,7 @@ func (endpoint *UserEndpoint) LoginHandler() http.HandlerFunc {
 		user, err := endpoint.UserQueryHandler.GetById(creds.Username)
 		if err != nil {
 			http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+			return
 		}
 		if !endpoint.AuthService.CheckPassword(user.Password, creds.Password) {
 			http.Error(w, "Invalid credentials", http.StatusUnauthorized)
@@ -84,6 +91,7 @@ func (endpoint *UserEndpoint) LoginHandler() http.HandlerFunc {
 		w.Header().Set("Content-Type", "application/json")
 		err = json.NewEncoder(w).Encode(map[string]string{"token": token})
 		if err != nil {
+			http.Error(w, "Error generating token", http.StatusInternalServerError)
 			return
 		}
 	}
@@ -131,79 +139,44 @@ func (endpoint *UserEndpoint) RegisterHandler() http.HandlerFunc {
 	}
 }
 
-func (endpoint *UserEndpoint) LinkSteamAccountHandler() http.HandlerFunc {
-	return endpoint.AuthService.AuthMiddleware(func(w http.ResponseWriter,
-		r *http.Request) {
-		if r.Method != http.MethodPost {
-			http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
-			return
-		}
+var openID = openid.NewOpenID(http.DefaultClient)
 
-		// Extract SteamID from OpenID response
-		claimedID := r.FormValue("openid.claimed_id")
-		const steamPrefix = "https://steamcommunity.com/openid/id/"
-		if !strings.HasPrefix(claimedID, steamPrefix) {
-			http.Error(w, "Invalid Steam response", http.StatusUnauthorized)
-			return
-		}
-		steamID := strings.TrimPrefix(claimedID, steamPrefix)
+func (endpoint *UserEndpoint) SteamLoginHandler() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		callbackURL := config.BackendUrl() + "/api/auth/steam/callback"
 
-		// Prepare verification request back to Steam
-		params := r.URL.Query()
-		params.Set("openid.mode", "check_authentication")
-
-		resp, err := http.PostForm("https://steamcommunity.com/openid/login",
-			params)
+		redirectURL, err := openID.RedirectURL("https://steamcommunity.com/openid", callbackURL, "")
 		if err != nil {
-			http.Error(w, "Failed to verify OpenID",
-				http.StatusInternalServerError)
+			http.Error(w, "OpenID Auth error", http.StatusInternalServerError)
 			return
 		}
-		defer func(Body io.ReadCloser) {
-			err := Body.Close()
-			if err != nil {
-				logger.Fail("Failed to close response body")
-				return
-			}
-		}(resp.Body)
 
-		// Read entire response body
-		body, err := io.ReadAll(resp.Body)
+		http.Redirect(w, r, redirectURL, http.StatusFound)
+	}
+}
+
+func (endpoint *UserEndpoint) SteamCallbackHandler() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		fullURL := "https://" + r.Host + r.RequestURI // Use r.RequestURI
+		logger.Info("Full URL: " + fullURL)           // Log the full URL
+
+		id, err := openID.Verify(fullURL, nil, nil)
 		if err != nil {
-			http.Error(w, "Failed to read Steam response",
-				http.StatusInternalServerError)
-			return
-		}
-		if !strings.Contains(string(body), "is_valid:true") {
-			http.Error(w, "Steam OpenID verification failed",
-				http.StatusUnauthorized)
+			logger.Fail("Failed to verify OpenID: " + err.Error()) // Log the error
+			http.Error(w, "Failed to verify OpenID", http.StatusUnauthorized)
 			return
 		}
 
-		// Extract username from the JWT
-		tokenString := r.Header.Get("Authorization")
-		username, err := endpoint.AuthService.GetFieldFromJWT(tokenString, "username")
+		// Extract SteamID from the OpenID URL
+		steamID := id[len("https://steamcommunity.com/openid/id/"):]
+		logger.Info("Steam ID verified: " + steamID)
+
+		w.Header().Set("Content-Type", "application/json")
+		err = json.NewEncoder(w).Encode(map[string]string{"steamID": steamID})
 		if err != nil {
-			http.Error(w, "Error getting userId from user", http.StatusUnauthorized)
+			logger.Fail("Failed to encode JSON: " + err.Error()) // Log the error
+			http.Error(w, "Failed to parse steamID", http.StatusUnauthorized)
 			return
 		}
-
-		// Retrieve user by username
-		user, err := endpoint.UserQueryHandler.GetById(username)
-		if err != nil {
-			http.Error(w, "User not found", http.StatusNotFound)
-			return
-		}
-
-		// Update user with SteamID
-		user.SteamID = steamID
-		if err := endpoint.UserCommandHandler.Update(user); err != nil {
-			logger.Debug("Error updating user with SteamID: " + err.Error())
-			http.Error(w, "Error updating user", http.StatusInternalServerError)
-			return
-		}
-
-		w.WriteHeader(http.StatusOK)
-		_ = json.NewEncoder(w).Encode(map[string]string{"steam_id": steamID})
-	})
+	}
 }
