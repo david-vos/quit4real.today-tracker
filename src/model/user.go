@@ -3,9 +3,11 @@ package model
 import "database/sql"
 
 type User struct {
-	ID       int    `json:"id"`   // Using string to match the database schema
-	Name     string `json:"name"` // Username
-	Password string `json:"password"`
+	ID            int    `json:"id"`   // Using string to match the database schema
+	Name          string `json:"name"` // Internal Username
+	SteamUserName string `json:"steamUsername"`
+	SteamID       string `json:"steamid"`
+	Password      string `json:"password"`
 }
 
 type Credentials struct {
@@ -19,6 +21,8 @@ func MapUser(rows *sql.Rows) (User, error) {
 		&user.ID,
 		&user.Name,
 		&user.Password,
+		&user.SteamID,
+		&user.SteamUserName,
 	); err != nil {
 		return User{}, err
 	}

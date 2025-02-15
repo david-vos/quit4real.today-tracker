@@ -42,6 +42,12 @@ func (repository *UserRepository) Add(user model.User) error {
 	return err
 }
 
+func (repository *UserRepository) Update(user model.User) error {
+	query := "UPDATE users SET name = ?, password = ?, steamid = ?, steam_display_name = ? WHERE id = ?"
+	err := repository.DatabaseImpl.ExecuteQuery(query, user.Name, user.Password, user.ID, user.SteamID, user.SteamUserName)
+	return err
+}
+
 func (repository *UserRepository) GetById(username string) (model.User, error) {
 	query := `SELECT * FROM users WHERE name=?;`
 	rows, err := repository.DatabaseImpl.FetchRows(query, username)

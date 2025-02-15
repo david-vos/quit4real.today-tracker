@@ -17,6 +17,32 @@ type SteamApiResponse struct {
 	Response SteamApiGetLastPlayed `json:"response"`
 }
 
+type SteamApiUserInfo struct {
+	SteamID                  string `json:"steamid"`
+	CommunityVisibilityState int    `json:"communityvisibilitystate"`
+	ProfileState             int    `json:"profilestate"`
+	PersonaName              string `json:"personaname"`
+	ProfileURL               string `json:"profileurl"`
+	Avatar                   string `json:"avatar"`
+	AvatarMedium             string `json:"avatarmedium"`
+	AvatarFull               string `json:"avatarfull"`
+	AvatarHash               string `json:"avatarhash"`
+	PersonaState             int    `json:"personastate"`
+	RealName                 string `json:"realname"`
+	PrimaryClanID            string `json:"primaryclanid"`
+	TimeCreated              int64  `json:"timecreated"`
+	PersonaStateFlags        int    `json:"personastateflags"`
+	LocCountryCode           string `json:"loccountrycode"`
+	LocStateCode             string `json:"locstatecode"`
+	LocCityID                int    `json:"loccityid"`
+}
+
+type SteamApiUserInfoResponse struct {
+	Response struct {
+		Players []SteamApiUserInfo `json:"players"`
+	} `json:"response"`
+}
+
 type SteamAPIAllGame struct {
 	Appid                    int    `json:"appid"`
 	Name                     string `json:"name"`

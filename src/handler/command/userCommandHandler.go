@@ -16,3 +16,11 @@ func (handler *UserCommandHandler) Add(user model.User) error {
 	}
 	return nil
 }
+
+func (handler *UserCommandHandler) Update(user model.User) error {
+	var err = handler.UserRepository.Update(user)
+	if err != nil {
+		return err
+	}
+	return nil
+}

@@ -1,14 +1,19 @@
 package service
 
 import (
+	"fmt"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/yohcop/openid-go"
 	"golang.org/x/crypto/bcrypt"
 	"net/http"
 	"quit4real.today/config"
+	"quit4real.today/src/model"
 	"time"
 )
 
-type AuthService struct{}
+type AuthService struct {
+	OpenID openid.OpenID
+}
 
 func (service *AuthService) HashPassword(password string) ([]byte, error) {
 	// This already does some salting so there is no need to do it later again.
@@ -19,13 +24,26 @@ func (service *AuthService) CheckPassword(hashedPassword, password string) bool 
 	return bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password)) == nil
 }
 
-func (service *AuthService) GenerateJWT(username string) (string, error) {
+func (service *AuthService) GenerateJWT(user model.User) (string, error) {
 	claims := jwt.MapClaims{
-		"username": username,
-		"exp":      time.Now().Add(time.Hour * 1).Unix(), // 1-hour expiration
+		"username":  user.Name,
+		"steamName": user.SteamUserName,
+		"steamID":   user.SteamID,
+		"exp":       time.Now().Add(time.Hour * 1).Unix(), // 1-hour expiration
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString(config.JwtSecret())
+}
+
+func (service *AuthService) GetFieldFromJWT(tokenString string, field string) (string, error) {
+	claims := &jwt.MapClaims{}
+	_, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+		return config.JwtSecret(), nil
+	})
+	if err != nil {
+		return "", fmt.Errorf("could not parse token")
+	}
+	return (*claims)[field].(string), nil
 }
 
 func (service *AuthService) AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
