@@ -1,4 +1,4 @@
-//go:build !dependabot
+//go:build dependabot
 
 package config
 
