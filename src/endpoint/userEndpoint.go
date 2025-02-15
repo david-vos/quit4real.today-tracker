@@ -81,7 +81,7 @@ func (endpoint *UserEndpoint) LoginHandler() http.HandlerFunc {
 			return
 		}
 
-		token, err := endpoint.AuthService.GenerateJWT(creds.Username)
+		token, err := endpoint.AuthService.GenerateJWT(user)
 		if err != nil {
 			http.Error(w, "Error generating token", http.StatusInternalServerError)
 			return
@@ -179,6 +179,13 @@ func (endpoint *UserEndpoint) SteamCallbackHandler() http.HandlerFunc {
 			http.Error(w, "User not found", http.StatusNotFound)
 			return
 		}
+		steamUserInfo, err := endpoint.SteamService.FetchUserInfo(steamID)
+		if err != nil {
+			http.Error(w, "Failed to get steam information", http.StatusNotFound)
+			return
+		}
+
+		user.SteamUserName = steamUserInfo.PersonaName
 		user.SteamID = steamID
 		err = endpoint.UserCommandHandler.Update(user)
 		if err != nil {

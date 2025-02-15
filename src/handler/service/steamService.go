@@ -97,6 +97,25 @@ func (service *SteamService) FetchRecentGames(steamId string) (*model.SteamApiRe
 	return &apiResponse, nil
 }
 
+func (service *SteamService) FetchUserInfo(steamId string) (*model.SteamApiUserInfo, error) {
+	apiKey := config.GetSteamApiKey()
+	url := fmt.Sprintf("http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key=%s&steamids=%s&format=json", apiKey, steamId)
+	body, err := service.getAndValidateRequest(url)
+	if err != nil {
+		return nil, err
+	}
+
+	var apiResponse model.SteamApiUserInfoResponse
+	if err = json.Unmarshal(body, &apiResponse); err != nil {
+		return nil, fmt.Errorf("error parsing JSON: %w", err)
+	}
+	if len(apiResponse.Response.Players) != 1 {
+		return nil, fmt.Errorf("no correct player found")
+	}
+
+	return &apiResponse.Response.Players[0], nil
+}
+
 // getAndValidateRequest performs an HTTP GET request and validates the response.
 func (service *SteamService) getAndValidateRequest(url string) ([]byte, error) {
 	resp, err := http.Get(url)

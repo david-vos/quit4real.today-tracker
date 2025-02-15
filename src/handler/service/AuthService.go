@@ -7,6 +7,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 	"net/http"
 	"quit4real.today/config"
+	"quit4real.today/src/model"
 	"time"
 )
 
@@ -23,10 +24,12 @@ func (service *AuthService) CheckPassword(hashedPassword, password string) bool 
 	return bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password)) == nil
 }
 
-func (service *AuthService) GenerateJWT(username string) (string, error) {
+func (service *AuthService) GenerateJWT(user model.User) (string, error) {
 	claims := jwt.MapClaims{
-		"username": username,
-		"exp":      time.Now().Add(time.Hour * 1).Unix(), // 1-hour expiration
+		"username":  user.Name,
+		"steamName": user.SteamUserName,
+		"steamID":   user.SteamID,
+		"exp":       time.Now().Add(time.Hour * 1).Unix(), // 1-hour expiration
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	return token.SignedString(config.JwtSecret())
