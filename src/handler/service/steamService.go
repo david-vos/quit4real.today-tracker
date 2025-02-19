@@ -7,11 +7,14 @@ import (
 	"net/http"
 	"quit4real.today/config"
 	"quit4real.today/logger"
+	"quit4real.today/src/handler/command"
 	"quit4real.today/src/model"
 	"strconv"
 )
 
-type SteamService struct{}
+type SteamService struct {
+	SubscriptionCommandHandler *command.SubscriptionCommandHandler
+}
 
 // MatchedDbGameToSteamGameInfo holds the mapping between a database tracked game and a Steam game.
 type MatchedDbGameToSteamGameInfo struct {
@@ -167,6 +170,15 @@ func (service *SteamService) GetOnlyFailed(
 	}
 
 	return response
+}
+
+func (service *SteamService) UpdateFromSteamApi(steamId string) {
+	apiResponse, err := service.FetchRecentGames(steamId)
+	if err != nil {
+		logger.Fail("failed to fetch player information for player: " + steamId + " | ERROR: " + err.Error())
+		return
+	}
+	service.SubscriptionCommandHandler.UpdateSubscriptions(steamId, apiResponse)
 }
 
 // closeBody closes the response body and logs any errors.

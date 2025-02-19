@@ -5,11 +5,14 @@ import (
 	"quit4real.today/logger"
 	"quit4real.today/src/handler/command"
 	"quit4real.today/src/handler/query"
+	"quit4real.today/src/handler/service"
 )
 
 type FailCron struct {
 	SubscriptionCommandHandler *command.SubscriptionCommandHandler
 	SubscriptionQueryHandler   *query.SubscriptionQueryHandler
+	UserQueryHandler           *query.UserQueryHandler
+	SteamService               *service.SteamService
 }
 
 func (fc *FailCron) Start() {
@@ -35,6 +38,10 @@ func (fc *FailCron) updateAndSendNotifySteam() {
 		logger.Fail("Error getting user when running cron jobs: " + err.Error())
 		return
 	}
+	allSteamUsers, err := fc.UserQueryHandler.GetAll()
+	if err != nil {
+		logger.Fail("Error getting user when running cron jobs: " + err.Error())
+	}
 
 	platformUserIds := make(map[string]bool)
 
@@ -44,8 +51,16 @@ func (fc *FailCron) updateAndSendNotifySteam() {
 		platformUserIds[platformUserId] = true
 	}
 
+	// Populate the map with all Steam subscriptions
+	for _, user := range allSteamUsers {
+		userId := user.SteamID
+		if !platformUserIds[userId] {
+			platformUserIds[userId] = true
+		}
+	}
+
 	// Iterate over each unique platformUserId and update
 	for platformUserId := range platformUserIds {
-		fc.SubscriptionCommandHandler.UpdateFromSteamApi(platformUserId)
+		fc.SteamService.UpdateFromSteamApi(platformUserId)
 	}
 }

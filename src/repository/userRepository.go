@@ -48,6 +48,24 @@ func (repository *UserRepository) Update(user model.User) error {
 	return err
 }
 
+func (repository *UserRepository) GetAllSteamVerified() ([]model.User, error) {
+	query := `SELECT * FROM users WHERE steamid NOT NULL ;`
+	rows, err := repository.DatabaseImpl.FetchRows(query)
+	if err != nil {
+		return nil, err
+	}
+	var users []model.User
+	for rows.Next() {
+		user, err := model.MapUser(rows)
+		if err != nil {
+			return nil, err
+		}
+		users = append(users, user)
+	}
+	return users, nil
+
+}
+
 func (repository *UserRepository) GetById(username string) (model.User, error) {
 	query := `SELECT * FROM users WHERE name=?;`
 	rows, err := repository.DatabaseImpl.FetchRows(query, username)

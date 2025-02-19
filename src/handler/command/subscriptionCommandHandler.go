@@ -42,14 +42,7 @@ func (handler *SubscriptionCommandHandler) Add(subscription model.Subscription) 
 	return fmt.Errorf("we currently only support steam as a valid platform")
 }
 
-// UpdateFromSteamApi updates the user's subscriptions based on recent games fetched from the Steam API.
-func (handler *SubscriptionCommandHandler) UpdateFromSteamApi(steamId string) {
-	apiResponse, err := handler.SteamService.FetchRecentGames(steamId)
-	if err != nil {
-		logger.Fail("failed to fetch player information for player: " + steamId + " | ERROR: " + err.Error())
-		return
-	}
-
+func (handler *SubscriptionCommandHandler) UpdateSubscriptions(steamId string, apiResponse *model.SteamApiResponse) {
 	trackedGamesByUser, err := handler.SubscriptionRepository.GetAllForUser(steamId)
 	if err != nil {
 		logger.Fail("failed to get all tracked games for player: " + steamId + " | ERROR: " + err.Error())

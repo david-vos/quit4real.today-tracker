@@ -17,6 +17,14 @@ func (handler *UserQueryHandler) GetAll() ([]model.User, error) {
 	return users, nil
 }
 
+func (handler *UserQueryHandler) GetAllSteamVerified() ([]model.User, error) {
+	users, err := handler.UserRepository.GetAllSteamVerified()
+	if err != nil {
+		return nil, err
+	}
+	return users, nil
+}
+
 func (handler *UserQueryHandler) GetById(username string) (model.User, error) {
 	user, err := handler.UserRepository.GetById(username)
 	if err != nil {
