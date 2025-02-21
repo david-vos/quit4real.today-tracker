@@ -13,6 +13,20 @@ go build -v
 go run quit4real.today
 ```
 
+# Docker compose
+just do `docker compose up --build -d` 
+
+# Desgin
+![image](https://github.com/user-attachments/assets/feb3cd1e-f3c5-44a3-9c7e-02f5e3143b3f)
+This is the idea behind it.
+
+Endpoints can only talk to Services.
+Services can talk to one another
+Services can talk to an any Command or Query Handler
+Commands and Queries cannot talk to each other. They do belong to eah other. Meaning that a FailRepository can only be called by an FailCommandHandler or FailQueryHandler
+The Repository will persist it in SQLite or any other future projection
+
+
 # VERY BETA
 This project is currently stil a WIP.
 Everything is currently subject to change. That includes the data design and reponse types
