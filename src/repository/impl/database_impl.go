@@ -1,4 +1,4 @@
-package repository
+package impl
 
 import (
 	"database/sql"
@@ -26,7 +26,7 @@ func (c *DatabaseImpl) FetchRows(query string, args ...interface{}) (*sql.Rows, 
 	return rows, nil
 }
 
-func closeRows(rows *sql.Rows) error {
+func (c *DatabaseImpl) CloseRows(rows *sql.Rows) error {
 	if err := rows.Close(); err != nil {
 		return fmt.Errorf("error closing rows: %w", err)
 	}

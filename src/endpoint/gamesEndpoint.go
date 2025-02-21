@@ -10,7 +10,7 @@ import (
 
 type GamesEndpoint struct {
 	Router           *mux.Router
-	GameQueryHandler *query.GameQueryHandler
+	GameQueryHandler *query.GameQueryHandlerImpl
 }
 
 func (endpoint *GamesEndpoint) Games() {

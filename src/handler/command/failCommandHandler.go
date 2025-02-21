@@ -8,12 +8,12 @@ import (
 	"time"
 )
 
-type FailsCommandHandler struct {
-	FailRepository *repository.FailRepository
+type FailsCommandHandlerImpl struct {
+	FailRepository repository.FailRepository
 }
 
 // Add adds a new failure record based on the subscription and the new time.
-func (handler *FailsCommandHandler) Add(subscription model.Subscription, newTime int) error {
+func (handler *FailsCommandHandlerImpl) Add(subscription model.Subscription, newTime int) error {
 	if handler == nil {
 		logger.Fail("FailsCommandHandler is nil")
 		return errors.New("FailsCommandHandler is nil")

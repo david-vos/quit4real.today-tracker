@@ -10,7 +10,7 @@ import (
 
 type FailEndpoint struct {
 	Router           *mux.Router
-	FailQueryHandler *query.FailQueryHandler
+	FailQueryHandler *query.FailQueryHandlerImpl
 }
 
 func (endpoint *FailEndpoint) Fail() {

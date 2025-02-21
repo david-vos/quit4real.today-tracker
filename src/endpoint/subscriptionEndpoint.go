@@ -13,9 +13,9 @@ import (
 
 type SubscriptionEndpoint struct {
 	Router                     *mux.Router
-	SubscriptionCommandHandler *command.SubscriptionCommandHandler
-	SubscriptionQueryHandler   *query.SubscriptionQueryHandler
-	AuthService                *service.AuthService
+	SubscriptionCommandHandler *command.SubscriptionCommandHandlerImpl
+	SubscriptionQueryHandler   *query.SubscriptionQueryHandlerImpl
+	AuthService                service.AuthService
 }
 
 // Subscription handles the subscription-related endpoints.

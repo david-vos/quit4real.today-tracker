@@ -5,11 +5,11 @@ import (
 	"quit4real.today/src/repository"
 )
 
-type UserCommandHandler struct {
-	UserRepository *repository.UserRepository
+type UserCommandHandlerImpl struct {
+	UserRepository repository.UserRepository
 }
 
-func (handler *UserCommandHandler) Add(user model.User) error {
+func (handler *UserCommandHandlerImpl) Add(user model.User) error {
 	var err = handler.UserRepository.Add(user)
 	if err != nil {
 		return err
@@ -17,7 +17,7 @@ func (handler *UserCommandHandler) Add(user model.User) error {
 	return nil
 }
 
-func (handler *UserCommandHandler) Update(user model.User) error {
+func (handler *UserCommandHandlerImpl) Update(user model.User) error {
 	var err = handler.UserRepository.Update(user)
 	if err != nil {
 		return err
