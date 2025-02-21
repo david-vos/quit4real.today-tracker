@@ -1,4 +1,4 @@
-package service
+package impl
 
 import (
 	"fmt"
@@ -11,20 +11,23 @@ import (
 	"time"
 )
 
-type AuthService struct {
+type AuthServiceImpl struct {
 	OpenID openid.OpenID
 }
 
-func (service *AuthService) HashPassword(password string) ([]byte, error) {
+func (service *AuthServiceImpl) GetOpenId() openid.OpenID {
+	return service.OpenID
+}
+func (service *AuthServiceImpl) HashPassword(password string) ([]byte, error) {
 	// This already does some salting so there is no need to do it later again.
 	return bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 }
 
-func (service *AuthService) CheckPassword(hashedPassword, password string) bool {
+func (service *AuthServiceImpl) CheckPassword(hashedPassword, password string) bool {
 	return bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password)) == nil
 }
 
-func (service *AuthService) GenerateJWT(user model.User) (string, error) {
+func (service *AuthServiceImpl) GenerateJWT(user model.User) (string, error) {
 	claims := jwt.MapClaims{
 		"username":  user.Name,
 		"steamName": user.SteamUserName,
@@ -35,7 +38,7 @@ func (service *AuthService) GenerateJWT(user model.User) (string, error) {
 	return token.SignedString(config.JwtSecret())
 }
 
-func (service *AuthService) GetFieldFromJWT(tokenString string, field string) (string, error) {
+func (service *AuthServiceImpl) GetFieldFromJWT(tokenString string, field string) (string, error) {
 	claims := &jwt.MapClaims{}
 	_, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
 		return config.JwtSecret(), nil
@@ -46,7 +49,7 @@ func (service *AuthService) GetFieldFromJWT(tokenString string, field string) (s
 	return (*claims)[field].(string), nil
 }
 
-func (service *AuthService) AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
+func (service *AuthServiceImpl) AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		tokenString := r.Header.Get("Authorization")
 		if tokenString == "" {

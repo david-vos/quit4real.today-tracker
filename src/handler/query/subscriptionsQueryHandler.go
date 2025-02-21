@@ -5,11 +5,11 @@ import (
 	"quit4real.today/src/repository"
 )
 
-type SubscriptionQueryHandler struct {
-	SubscriptionRepository *repository.SubscriptionRepository
+type SubscriptionQueryHandlerImpl struct {
+	SubscriptionRepository repository.SubscriptionRepository
 }
 
-func (handler *SubscriptionQueryHandler) GetAllSteam() ([]model.Subscription, error) {
+func (handler *SubscriptionQueryHandlerImpl) GetAllSteam() ([]model.Subscription, error) {
 	subscriptions, err := handler.SubscriptionRepository.GetAllSteam()
 	if err != nil {
 		return nil, err
@@ -17,8 +17,16 @@ func (handler *SubscriptionQueryHandler) GetAllSteam() ([]model.Subscription, er
 	return subscriptions, nil
 }
 
-func (handler *SubscriptionQueryHandler) GetAllView() ([]model.SubscriptionsView, error) {
+func (handler *SubscriptionQueryHandlerImpl) GetAllView() ([]model.SubscriptionsView, error) {
 	subscriptions, err := handler.SubscriptionRepository.GetAllView()
+	if err != nil {
+		return nil, err
+	}
+	return subscriptions, nil
+}
+
+func (handler *SubscriptionQueryHandlerImpl) GetAllUser(userId string) ([]model.Subscription, error) {
+	subscriptions, err := handler.SubscriptionRepository.GetAllForUser(userId)
 	if err != nil {
 		return nil, err
 	}
