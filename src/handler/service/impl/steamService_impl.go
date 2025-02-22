@@ -7,13 +7,14 @@ import (
 	"net/http"
 	"quit4real.today/config"
 	"quit4real.today/logger"
-	"quit4real.today/src/handler/command"
 	"quit4real.today/src/model"
 	"strconv"
 )
 
-type SteamServiceImpl struct {
-	SubscriptionCommandHandler *command.SubscriptionCommandHandlerImpl
+type SteamServiceImpl struct{}
+
+func NewSteamServiceImpl() *SteamServiceImpl {
+	return &SteamServiceImpl{}
 }
 
 // GetSteamIdFromVanityName resolves a vanity name to a Steam ID.
@@ -165,15 +166,6 @@ func (service *SteamServiceImpl) GetOnlyFailed(
 	return response
 }
 
-//	func (service *SteamServiceImpl) UpdateFromSteamApi(steamId string) {
-//		apiResponse, err := service.FetchRecentGames(steamId)
-//		if err != nil {
-//			logger.Fail("failed to fetch player information for player: " + steamId + " | ERROR: " + err.Error())
-//			return
-//		}
-//		service.SubscriptionCommandHandler.UpdateSubscriptions(steamId, apiResponse)
-//	}
-//
 // closeBody closes the response body and logs any errors.
 func closeBody(body io.ReadCloser) {
 	if err := body.Close(); err != nil {

@@ -13,6 +13,7 @@ type FailCronImpl struct {
 	SubscriptionQueryHandler   *query.SubscriptionQueryHandlerImpl
 	UserQueryHandler           *query.UserQueryHandlerImpl
 	SteamService               service.SteamService
+	SubscriptionService        service.SubscriptionService
 }
 
 func (fc *FailCronImpl) Start() {
@@ -60,7 +61,14 @@ func (fc *FailCronImpl) updateAndSendNotifySteam() {
 	}
 
 	// Iterate over each unique platformUserId and update
+	// This should all be abstracted away so you don't need a different service with a different platform
 	for platformUserId := range platformUserIds {
-		fc.SteamService.UpdateFromSteamApi(platformUserId)
+		apiResponse, err := fc.SteamService.FetchRecentGames(platformUserId)
+		if err != nil {
+			logger.Fail("failed to fetch player information for player: " + platformUserId + " | ERROR: " + err.Error())
+			return
+		}
+		failedGamesByUser := fc.SubscriptionService.UpdateSteamSubscription(platformUserId, apiResponse)
+		fc.SubscriptionCommandHandler.UpdateSubscriptions(platformUserId, failedGamesByUser)
 	}
 }

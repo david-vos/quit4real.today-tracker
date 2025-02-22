@@ -3,6 +3,7 @@ package src
 import (
 	"database/sql"
 	"github.com/gorilla/mux"
+	"github.com/yohcop/openid-go"
 	"quit4real.today/src/cronJobs"
 	"quit4real.today/src/endpoint"
 	"quit4real.today/src/handler/command"
@@ -39,7 +40,7 @@ type CommandHandlers struct {
 
 // QueryHandlers holds all query handlers.
 type QueryHandlers struct {
-	FailsQueryHandler        *query.FailsQueryHandlerImpl
+	FailQueryHandler         *query.FailQueryHandlerImpl
 	UserQueryHandler         *query.UserQueryHandlerImpl
 	SubscriptionQueryHandler *query.SubscriptionQueryHandlerImpl
 	GameQueryHandler         *query.GameQueryHandlerImpl
@@ -53,14 +54,28 @@ type Repositories struct {
 	GameRepository         *repoImpl.GameRepositoryImpl
 }
 
-// AppInit initializes the application with the provided database connection and services.
-func AppInit(dataBaseConnection *sql.DB, steamService service.SteamService, authService service.AuthService) *App {
-	databaseImpl := &repoImpl.DatabaseImpl{DB: dataBaseConnection}
+// AppInit initializes the application with all required services and components.
+func AppInit(databaseConnection *sql.DB) *App {
+	// Initialize the database implementation
+	databaseImpl := &repoImpl.DatabaseImpl{DB: databaseConnection}
+
+	// Initialize services
+	steamService := impl.NewSteamServiceImpl()
+	authService := impl.NewAuthServiceImpl(*openid.NewOpenID(nil)) // Use default HTTP client for OpenID
+
 	services := createServices(steamService, authService)
+
+	// Initialize repositories
 	repositories := createRepositories(databaseImpl)
+
+	// Initialize command and query handlers
 	commandHandlers := createCommandHandlers(repositories, services)
 	queryHandlers := createQueryHandlers(repositories)
-	jobs := createJobs(queryHandlers, commandHandlers)
+
+	// Initialize cron jobs
+	jobs := createJobs(queryHandlers, commandHandlers, services)
+
+	// Initialize endpoints
 	endpoints := createEndpoints(commandHandlers, queryHandlers, services)
 
 	return &App{
@@ -74,6 +89,7 @@ func AppInit(dataBaseConnection *sql.DB, steamService service.SteamService, auth
 	}
 }
 
+// createServices initializes and returns all application services.
 func createServices(steamService service.SteamService, authService service.AuthService) *Services {
 	return &Services{
 		SteamService: steamService,
@@ -81,56 +97,90 @@ func createServices(steamService service.SteamService, authService service.AuthS
 	}
 }
 
-func createRepositories(databaseImpl *impl.DatabaseImpl) *Repositories {
+// createRepositories initializes and returns all repositories.
+func createRepositories(databaseImpl *repoImpl.DatabaseImpl) *Repositories {
 	return &Repositories{
-		SubscriptionRepository: &repoImpl.SubscriptionRepositoryImpl{DatabaseImpl: databaseImpl},
-		UserRepository:         &repoImpl.UserRepositoryImpl{DatabaseImpl: databaseImpl},
 		FailRepository:         &repoImpl.FailRepositoryImpl{DatabaseImpl: databaseImpl},
+		UserRepository:         &repoImpl.UserRepositoryImpl{DatabaseImpl: databaseImpl},
+		SubscriptionRepository: &repoImpl.SubscriptionRepositoryImpl{DatabaseImpl: databaseImpl},
 		GameRepository:         &repoImpl.GameRepositoryImpl{DatabaseImpl: databaseImpl},
 	}
 }
 
+// createCommandHandlers initializes and returns all command handlers.
 func createCommandHandlers(repositories *Repositories, services *Services) *CommandHandlers {
-	failsHandler := &command.FailsCommandHandler{FailRepository: repositories.FailRepository}
-	gameHandler := &command.GameCommandHandler{GameRepository: repositories.GameRepository}
-	subscriptionCommandHandler := &command.SubscriptionCommandHandler{
-		SteamService:           services.SteamService,
-		SubscriptionRepository: repositories.SubscriptionRepository,
-		FailsCommandHandler:    failsHandler,
-		GameCommandHandler:     gameHandler,
-	}
-
 	return &CommandHandlers{
-		FailsCommandHandler:        failsHandler,
-		SubscriptionCommandHandler: subscriptionCommandHandler,
-		UserCommandHandler:         &command.UserCommandHandlerImpl{UserRepository: repositories.UserRepository},
-		GameCommandHandler:         gameHandler,
+		FailsCommandHandler: &command.FailsCommandHandlerImpl{
+			FailRepository: repositories.FailRepository,
+		},
+		SubscriptionCommandHandler: &command.SubscriptionCommandHandlerImpl{
+			SteamService:           services.SteamService,
+			SubscriptionRepository: repositories.SubscriptionRepository,
+			FailsCommandHandler:    &command.FailsCommandHandlerImpl{FailRepository: repositories.FailRepository},
+			GameCommandHandler:     &command.GameCommandHandlerImpl{GameRepository: repositories.GameRepository},
+		},
+		UserCommandHandler: &command.UserCommandHandlerImpl{
+			UserRepository: repositories.UserRepository,
+		},
+		GameCommandHandler: &command.GameCommandHandlerImpl{
+			GameRepository: repositories.GameRepository,
+		},
 	}
 }
 
+// createQueryHandlers initializes and returns all query handlers.
 func createQueryHandlers(repositories *Repositories) *QueryHandlers {
 	return &QueryHandlers{
-		FailsQueryHandler:        &query.FailsQueryHandlerImpl{FailRepository: repositories.FailRepository},
+		FailQueryHandler:         &query.FailQueryHandlerImpl{FailRepository: repositories.FailRepository},
 		UserQueryHandler:         &query.UserQueryHandlerImpl{UserRepository: repositories.UserRepository},
-		SubscriptionQueryHandler: &query.SubscriptionQueryHandler{SubscriptionRepository: repositories.SubscriptionRepository},
+		SubscriptionQueryHandler: &query.SubscriptionQueryHandlerImpl{SubscriptionRepository: repositories.SubscriptionRepository},
 		GameQueryHandler:         &query.GameQueryHandlerImpl{GameRepository: repositories.GameRepository},
 	}
 }
 
-func createJobs(queryHandlers *QueryHandlers, commandHandlers *CommandHandlers) *cronJobs.Jobs {
-	// Assuming cronJobs.Jobs depends on command and query handlers
-	return &cronJobs.Jobs{}
+// createJobs initializes and returns cron jobs.
+func createJobs(queryHandlers *QueryHandlers, commandHandlers *CommandHandlers, services *Services) *cronJobs.Jobs {
+	return &cronJobs.Jobs{
+		FailCron: &cronJobs.FailCronImpl{
+			SubscriptionQueryHandler:   queryHandlers.SubscriptionQueryHandler,
+			SubscriptionCommandHandler: commandHandlers.SubscriptionCommandHandler,
+			UserQueryHandler:           queryHandlers.UserQueryHandler,
+			SteamService:               services.SteamService,
+			SubscriptionService: &impl.SubscriptionServiceImpl{
+				SubscriptionQueryHandler: *queryHandlers.SubscriptionQueryHandler,
+				SteamService:             services.SteamService,
+			},
+		},
+	}
 }
 
+// createEndpoints initializes and returns all endpoints.
 func createEndpoints(commandHandlers *CommandHandlers, queryHandlers *QueryHandlers, services *Services) *endpoint.Endpoints {
 	router := mux.NewRouter()
+
 	return &endpoint.Endpoints{
 		Router: router,
+		UserEndpoint: &endpoint.UserEndpoint{
+			Router:                     router,
+			SteamService:               services.SteamService,
+			UserCommandHandler:         commandHandlers.UserCommandHandler,
+			UserQueryHandler:           queryHandlers.UserQueryHandler,
+			SubscriptionCommandHandler: commandHandlers.SubscriptionCommandHandler,
+			AuthService:                services.AuthService,
+		},
+		FailEndpoint: &endpoint.FailEndpoint{
+			Router:           router,
+			FailQueryHandler: queryHandlers.FailQueryHandler,
+		},
 		SubscriptionEndpoint: &endpoint.SubscriptionEndpoint{
 			Router:                     router,
 			SubscriptionCommandHandler: commandHandlers.SubscriptionCommandHandler,
 			SubscriptionQueryHandler:   queryHandlers.SubscriptionQueryHandler,
 			AuthService:                services.AuthService,
+		},
+		GamesEndpoint: &endpoint.GamesEndpoint{
+			Router:           router,
+			GameQueryHandler: queryHandlers.GameQueryHandler,
 		},
 	}
 }

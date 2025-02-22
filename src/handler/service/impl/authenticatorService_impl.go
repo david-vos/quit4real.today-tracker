@@ -15,6 +15,13 @@ type AuthServiceImpl struct {
 	OpenID openid.OpenID
 }
 
+// NewAuthServiceImpl creates a new instance of AuthServiceImpl.
+func NewAuthServiceImpl(openId openid.OpenID) *AuthServiceImpl {
+	return &AuthServiceImpl{
+		OpenID: openId,
+	}
+}
+
 func (service *AuthServiceImpl) GetOpenId() openid.OpenID {
 	return service.OpenID
 }

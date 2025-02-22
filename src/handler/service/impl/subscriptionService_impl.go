@@ -12,6 +12,13 @@ type SubscriptionServiceImpl struct {
 	SteamService             service.SteamService
 }
 
+func NewSubscriptionServiceImpl(subscriptionQueryHandler query.SubscriptionQueryHandlerImpl, steamService service.SteamService) *SubscriptionServiceImpl {
+	return &SubscriptionServiceImpl{
+		SubscriptionQueryHandler: subscriptionQueryHandler,
+		SteamService:             steamService,
+	}
+}
+
 // UpdateSteamSubscription updates the Steam subscriptions for a user based on the Steam API data.
 func (service *SubscriptionServiceImpl) UpdateSteamSubscription(steamId string, apiResponse *model.SteamApiResponse) []model.MatchedDbGameToSteamGameInfo {
 	trackedGamesByUser, err := service.SubscriptionQueryHandler.GetAllUser(steamId)

@@ -7,16 +7,16 @@ import (
 	"quit4real.today/src/model"
 )
 
-type GameRepositoryImp struct {
+type GameRepositoryImpl struct {
 	DatabaseImpl *DatabaseImpl
 }
 
-func (repository *GameRepositoryImp) Add(id string, name string, platformId string) error {
+func (repository *GameRepositoryImpl) Add(id string, name string, platformId string) error {
 	query := `INSERT INTO games (id, name, platform_id) VALUES (?, ?, ?)`
 	return repository.DatabaseImpl.ExecuteQuery(query, id, name, platformId)
 }
 
-func (repository *GameRepositoryImp) Exists(id string, platformId string) bool {
+func (repository *GameRepositoryImpl) Exists(id string, platformId string) bool {
 	query := `SELECT 1 FROM games WHERE id = ? AND platform_id = ? LIMIT 1`
 	rows, err := repository.DatabaseImpl.FetchRows(query, id, platformId)
 	if err != nil {
@@ -32,7 +32,7 @@ func (repository *GameRepositoryImp) Exists(id string, platformId string) bool {
 	return rows.Next()
 }
 
-func (repository *GameRepositoryImp) Search(searchParam string, platform string) ([]model.Game, error) {
+func (repository *GameRepositoryImpl) Search(searchParam string, platform string) ([]model.Game, error) {
 	query := `SELECT * FROM games WHERE name LIKE ? COLLATE NOCASE AND platform_id = ? LIMIT 20`
 	searchParam = "%" + searchParam + "%"
 	rows, err := repository.DatabaseImpl.FetchRows(query, searchParam, platform)
