@@ -39,7 +39,7 @@ func (fc *FailCronImpl) updateAndSendNotifySteam() {
 		logger.Fail("Error getting user when running cron jobs: " + err.Error())
 		return
 	}
-	allSteamUsers, err := fc.UserQueryHandler.GetAll()
+	allSteamUsers, err := fc.UserQueryHandler.GetAllSteamVerified()
 	if err != nil {
 		logger.Fail("Error getting user when running cron jobs: " + err.Error())
 	}
@@ -63,6 +63,7 @@ func (fc *FailCronImpl) updateAndSendNotifySteam() {
 	// Iterate over each unique platformUserId and update
 	// This should all be abstracted away so you don't need a different service with a different platform
 	for platformUserId := range platformUserIds {
+		println("Updating Steam subscription for user: " + platformUserId)
 		apiResponse, err := fc.SteamService.FetchRecentGames(platformUserId)
 		if err != nil {
 			logger.Fail("failed to fetch player information for player: " + platformUserId + " | ERROR: " + err.Error())
