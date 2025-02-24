@@ -1,31 +1,33 @@
 package model
 
-import "database/sql"
+import (
+	"database/sql"
+	"time"
+)
 
-type Trakcer struct {
-	ID                   int    `json:"id"`      // Auto-incrementing ID
-	UserId               int    `json:"user_id"` // Internal User ID
-	PlatformId           string `json:"platform_id"`
-	PlatformGameId       string `json:"platform_game_id"`
-	PlatformUserId       string `json:"platform_user_id"`
-	DurationMinutes      int    `json:"duration_minutes"`
-	AmountOfTimesStarted int    `json:"amount_of_times_started"`
-	Day                  string `json:"day"`
-	GameName             string `json:"game_name"`
+// Tracker represents the tracker table.
+type Tracker struct {
+	ID                 int       `db:"id"`
+	UserID             int       `db:"user_id"`
+	GameID             int       `db:"game_id"`
+	PlatformID         string    `db:"platform_id"`
+	TimePlayed         int       `db:"time_played"`
+	NewTotalTimePlayed int       `db:"new_total_time_played"`
+	AmountOfLogins     int       `db:"amount_of_logins"`
+	Day                time.Time `db:"day"`
 }
 
-func MapTrakcer(rows *sql.Rows) (Trakcer, error) {
-	var tracker Trakcer
+func MapTracker(rows *sql.Rows) (Tracker, error) {
+	var tracker Tracker
 	if err := rows.Scan(
 		&tracker.ID,
-		&tracker.UserId,
-		&tracker.PlatformId,
-		&tracker.PlatformGameId,
-		&tracker.PlatformUserId,
-		&tracker.DurationMinutes,
-		&tracker.AmountOfTimesStarted,
+		&tracker.UserID,
+		&tracker.GameID,
+		&tracker.PlatformID,
+		&tracker.TimePlayed,
+		&tracker.NewTotalTimePlayed,
+		&tracker.AmountOfLogins,
 		&tracker.Day,
-		&tracker.GameName,
 	); err != nil {
 		return tracker, err
 	}
