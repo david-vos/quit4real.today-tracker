@@ -2,6 +2,7 @@ package impl
 
 import (
 	"fmt"
+	"quit4real.today/logger"
 	"quit4real.today/src/model"
 	"quit4real.today/src/repository"
 	"strconv"
@@ -12,8 +13,45 @@ type TrackerServiceImpl struct {
 	TrackerRepository repository.TrackerRepository
 }
 
-func (service *TrackerServiceImpl) UpdateSteamTracker(steamId string, steamApiResponse *model.SteamApiResponse) {
+func (service *TrackerServiceImpl) UpdateSteamTrackers(steamId string, steamApiResponse *model.SteamApiResponse) {
 
+	for _, game := range steamApiResponse.Response.Games {
+		// Fetch the existing tracker for this game
+		tracker, err := service.TrackerRepository.GetLatestTrackerByUserIdAndGameId(steamId, game.AppID)
+		if err != nil {
+			// Handle the case where tracker might not exist
+			fmt.Printf("WARN: Tracker not found for SteamID: %s, GameID: %d. Skipping update.\n", steamId, game.AppID)
+			continue
+		}
+
+		// Calculate the difference in time played
+		timeDifference := game.PlaytimeForever - tracker.NewTotalTimePlayed
+
+		// Update tracker fields
+		tracker.TimePlayed += timeDifference
+		tracker.NewTotalTimePlayed = game.PlaytimeForever
+		tracker.AmountOfLogins++
+
+		// Check if the day has changed
+		if !tracker.Day.Equal(time.Now().Truncate(24 * time.Hour)) {
+			tracker.Day = time.Now().Truncate(24 * time.Hour)
+			tracker.AmountOfLogins = 1
+			err = service.TrackerRepository.UpdateTracker(tracker)
+			if err != nil {
+				logger.Fail(
+					fmt.Errorf("ERROR: Failed to update tracker for SteamID: %s, GameID: %d. Error: %s\n", steamId, game.AppID, err.Error()).Error())
+				continue
+			}
+		}
+
+		// Save the updated tracker
+		err = service.TrackerRepository.UpdateTracker(tracker)
+		if err != nil {
+			logger.Fail(
+				fmt.Errorf("ERROR: Failed to update tracker for SteamID: %s, GameID: %d. Error: %s\n", steamId, game.AppID, err.Error()).Error())
+			continue
+		}
+	}
 }
 
 func (service *TrackerServiceImpl) CreateSteamTrackers(steamId string, allGames *model.SteamAPIAllResponse) error {

@@ -1,11 +1,9 @@
 package impl
 
 import (
-	"database/sql"
 	"fmt"
 	"quit4real.today/logger"
 	"quit4real.today/src/model"
-	"quit4real.today/src/repository"
 )
 
 // trackerRepositoryImpl is the concrete implementation for TrackerRepository.
@@ -46,8 +44,31 @@ func (r *trackerRepositoryImpl) GetTrackerByID(userID, gameID int, day string) (
 	return nil, nil // Return nil if no rows are found
 }
 
+func (r *trackerRepositoryImpl) GetLatestTrackerByUserIdAndGameId(userID string, gameID int) (*model.Tracker, error) {
+	query := `SELECT * FROM tracker WHERE user_id = ? AND game_id = ? ORDER BY day DESC LIMIT 1`
+	rows, err := r.DatabaseImpl.FetchRows(query, userID, gameID)
+	if err != nil {
+		return nil, fmt.Errorf("error fetching tracker rows: %w", err)
+	}
+	defer func() {
+		if err := r.DatabaseImpl.CloseRows(rows); err != nil {
+			logger.Fail("failed to close rows: " + err.Error())
+		}
+	}()
+
+	if rows.Next() {
+		tracker, err := model.MapTracker(rows)
+		if err != nil {
+			return nil, fmt.Errorf("failed to map tracker row: %w", err)
+		}
+		return &tracker, nil
+	}
+	return nil, nil // Return nil if no rows are found
+
+}
+
 // UpdateTracker updates an existing tracker by its composite key (user_id, game_id, day).
-func (r *trackerRepositoryImpl) UpdateTracker(tracker model.Tracker) error {
+func (r *trackerRepositoryImpl) UpdateTracker(tracker *model.Tracker) error {
 	query := `UPDATE tracker  SET time_played = ?, new_total_time_played = ?, amount_of_logins = ?
               WHERE user_id = ? AND game_id = ? AND day = ?`
 	return r.DatabaseImpl.ExecuteQuery(query, tracker.TimePlayed, tracker.NewTotalTimePlayed, tracker.AmountOfLogins,
