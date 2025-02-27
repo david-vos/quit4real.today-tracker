@@ -13,12 +13,15 @@ import (
 )
 
 type UserEndpoint struct {
+	// Legacy code
 	Router                     *mux.Router
-	SteamService               service.SteamService
 	UserCommandHandler         *command.UserCommandHandlerImpl
 	UserQueryHandler           *query.UserQueryHandlerImpl
 	SubscriptionCommandHandler *command.SubscriptionCommandHandlerImpl
-	AuthService                service.AuthService
+	// Services
+	SteamService service.SteamService
+	AuthService  service.AuthService
+	UserService  service.UserService
 }
 
 func (endpoint *UserEndpoint) User() {
@@ -133,6 +136,8 @@ func (endpoint *UserEndpoint) RegisterHandler() http.HandlerFunc {
 			return
 		}
 
+		endpoint.UserService.CreateUserTrackers(user.SteamID)
+
 		w.WriteHeader(http.StatusCreated)
 		return
 	}
@@ -155,13 +160,13 @@ func (endpoint *UserEndpoint) SteamLoginHandler() http.HandlerFunc {
 
 func (endpoint *UserEndpoint) SteamCallbackHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		fullURL := "https://" + r.Host + r.RequestURI // Use r.RequestURI
-		logger.Info("Full URL: " + fullURL)           // Log the full URL
+		fullURL := "https://" + r.Host + r.RequestURI
+		logger.Info("Full URL: " + fullURL)
 
 		openId := endpoint.AuthService.GetOpenId()
 		id, err := openId.Verify(fullURL, nil, nil)
 		if err != nil {
-			logger.Fail("Failed to verify OpenID: " + err.Error()) // Log the error
+			logger.Fail("Failed to verify OpenID: " + err.Error())
 			http.Error(w, "Failed to verify OpenID", http.StatusUnauthorized)
 			return
 		}
@@ -186,6 +191,8 @@ func (endpoint *UserEndpoint) SteamCallbackHandler() http.HandlerFunc {
 			http.Error(w, "Failed to get steam information", http.StatusNotFound)
 			return
 		}
+
+		// update the user information to include steam info
 
 		user.SteamUserName = steamUserInfo.PersonaName
 		user.SteamID = steamID
