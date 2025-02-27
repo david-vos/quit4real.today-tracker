@@ -173,11 +173,12 @@ func createEndpoints(commandHandlers *CommandHandlers, queryHandlers *QueryHandl
 		Router: router,
 		UserEndpoint: &endpoint.UserEndpoint{
 			Router:                     router,
-			SteamService:               services.SteamService,
-			UserCommandHandler:         commandHandlers.UserCommandHandler,
 			UserQueryHandler:           queryHandlers.UserQueryHandler,
+			UserCommandHandler:         commandHandlers.UserCommandHandler,
 			SubscriptionCommandHandler: commandHandlers.SubscriptionCommandHandler,
+			SteamService:               services.SteamService,
 			AuthService:                services.AuthService,
+			UserService:                services.UserService,
 		},
 		FailEndpoint: &endpoint.FailEndpoint{
 			Router:           router,
