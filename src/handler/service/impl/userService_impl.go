@@ -46,12 +46,12 @@ func (service *UserServiceImpl) CreateUserTrackers(platformUserId string) {
 }
 
 func (service *UserServiceImpl) CreateUserTrackersSteam(steamId string) {
-	SteamService, err := service.SteamService.FetchApiGamesPlayer(steamId)
+	allGames, err := service.SteamService.FetchApiGamesPlayer(steamId)
 	if err != nil {
 		logger.Fail("Failed to fetch Steam API games for user: " + steamId + " | ERROR: " + err.Error())
 	}
 
-	err = service.TrackerService.CreateSteamTrackers(steamId, SteamService)
+	err = service.TrackerService.CreateSteamTrackers(steamId, allGames)
 	if err != nil {
 		logger.Fail("Failed to create trackers for user: " + steamId + " | ERROR: " + err.Error())
 	}

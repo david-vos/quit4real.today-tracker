@@ -136,8 +136,6 @@ func (endpoint *UserEndpoint) RegisterHandler() http.HandlerFunc {
 			return
 		}
 
-		endpoint.UserService.CreateUserTrackers(user.SteamID)
-
 		w.WriteHeader(http.StatusCreated)
 		return
 	}
@@ -201,6 +199,9 @@ func (endpoint *UserEndpoint) SteamCallbackHandler() http.HandlerFunc {
 			http.Error(w, "Error updating user", http.StatusInternalServerError)
 			return
 		}
+
+		// Add the trackers for steam to the user
+		endpoint.UserService.CreateUserTrackers(user.SteamID)
 
 		w.Header().Set("Content-Type", "application/json")
 		err = json.NewEncoder(w).Encode(map[string]string{"steamID": steamID})
