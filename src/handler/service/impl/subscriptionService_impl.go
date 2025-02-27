@@ -19,8 +19,8 @@ func NewSubscriptionServiceImpl(subscriptionQueryHandler query.SubscriptionQuery
 	}
 }
 
-// UpdateSteamSubscription updates the Steam subscriptions for a user based on the Steam API data.
-func (service *SubscriptionServiceImpl) UpdateSteamSubscription(steamId string, apiResponse *model.SteamApiResponse) []model.MatchedDbGameToSteamGameInfo {
+// GetOnlyFailedSteam gets all the failed games for a steam user
+func (service *SubscriptionServiceImpl) GetOnlyFailedSteam(steamId string, apiResponse *model.SteamApiResponse) []model.MatchedDbGameToSteamGameInfo {
 	trackedGamesByUser, err := service.SubscriptionQueryHandler.GetAllUser(steamId)
 	if err != nil {
 		logger.Fail("Failed to get all tracked games for player: " + steamId + " | ERROR: " + err.Error())
@@ -29,5 +29,4 @@ func (service *SubscriptionServiceImpl) UpdateSteamSubscription(steamId string, 
 
 	failedGames := service.SteamService.GetOnlyFailed(apiResponse, trackedGamesByUser)
 	return failedGames
-
 }
