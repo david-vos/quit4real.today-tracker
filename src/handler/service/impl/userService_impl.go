@@ -10,6 +10,13 @@ type UserServiceImpl struct {
 	SteamService   service.SteamService
 }
 
+func NewUserServiceImpl(TrackerService service.TrackerService, SteamService service.SteamService) *UserServiceImpl {
+	return &UserServiceImpl{
+		TrackerService: TrackerService,
+		SteamService:   SteamService,
+	}
+}
+
 func (service *UserServiceImpl) UpdateUserTrackers(platformUserId string) {
 	// Still need to think about how I want to know which platform a userId is from
 	// So there kind of needs to be logic that handles this, but for now I assume it is just steam.

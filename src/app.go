@@ -26,8 +26,11 @@ type App struct {
 
 // Services holds service dependencies as interfaces.
 type Services struct {
-	SteamService service.SteamService
-	AuthService  service.AuthService
+	SteamService        service.SteamService
+	AuthService         service.AuthService
+	TrackerService      service.TrackerService
+	SubscriptionService service.SubscriptionService
+	UserService         service.UserService
 }
 
 // CommandHandlers holds all command handlers.
@@ -52,6 +55,7 @@ type Repositories struct {
 	UserRepository         *repoImpl.UserRepositoryImpl
 	SubscriptionRepository *repoImpl.SubscriptionRepositoryImpl
 	GameRepository         *repoImpl.GameRepositoryImpl
+	TrackerRepository      *repoImpl.TrackerRepositoryImpl
 }
 
 // AppInit initializes the application with all required services and components.
@@ -59,18 +63,18 @@ func AppInit(databaseConnection *sql.DB) *App {
 	// Initialize the database implementation
 	databaseImpl := &repoImpl.DatabaseImpl{DB: databaseConnection}
 
-	// Initialize services
-	steamService := impl.NewSteamServiceImpl()
-	authService := impl.NewAuthServiceImpl(*openid.NewOpenID(nil)) // Use default HTTP client for OpenID
-
-	services := createServices(steamService, authService)
-
 	// Initialize repositories
 	repositories := createRepositories(databaseImpl)
+
+	// Initialize services
+	services := createServices(repositories)
 
 	// Initialize command and query handlers
 	commandHandlers := createCommandHandlers(repositories, services)
 	queryHandlers := createQueryHandlers(repositories)
+
+	// Fill the subscriptionService
+	services.SubscriptionService = impl.NewSubscriptionServiceImpl(*queryHandlers.SubscriptionQueryHandler, services.SteamService)
 
 	// Initialize cron jobs
 	jobs := createJobs(queryHandlers, commandHandlers, services)
@@ -90,10 +94,18 @@ func AppInit(databaseConnection *sql.DB) *App {
 }
 
 // createServices initializes and returns all application services.
-func createServices(steamService service.SteamService, authService service.AuthService) *Services {
+func createServices(repositories *Repositories) *Services {
+	// THIS repositories IS REALLY BAD BUT I NEED SLEEP!
+	steamService := impl.NewSteamServiceImpl()
+	authService := impl.NewAuthServiceImpl(*openid.NewOpenID(nil)) // Use default HTTP client for OpenID
+	trackerService := impl.NewTrackerServiceImpl(repositories.TrackerRepository)
+	userService := impl.NewUserServiceImpl(trackerService, steamService)
+
 	return &Services{
-		SteamService: steamService,
-		AuthService:  authService,
+		SteamService:   steamService,
+		AuthService:    authService,
+		TrackerService: trackerService,
+		UserService:    userService,
 	}
 }
 
@@ -104,6 +116,7 @@ func createRepositories(databaseImpl *repoImpl.DatabaseImpl) *Repositories {
 		UserRepository:         &repoImpl.UserRepositoryImpl{DatabaseImpl: databaseImpl},
 		SubscriptionRepository: &repoImpl.SubscriptionRepositoryImpl{DatabaseImpl: databaseImpl},
 		GameRepository:         &repoImpl.GameRepositoryImpl{DatabaseImpl: databaseImpl},
+		TrackerRepository:      &repoImpl.TrackerRepositoryImpl{DatabaseImpl: databaseImpl},
 	}
 }
 
@@ -146,10 +159,8 @@ func createJobs(queryHandlers *QueryHandlers, commandHandlers *CommandHandlers, 
 			SubscriptionCommandHandler: commandHandlers.SubscriptionCommandHandler,
 			UserQueryHandler:           queryHandlers.UserQueryHandler,
 			SteamService:               services.SteamService,
-			SubscriptionService: &impl.SubscriptionServiceImpl{
-				SubscriptionQueryHandler: *queryHandlers.SubscriptionQueryHandler,
-				SteamService:             services.SteamService,
-			},
+			SubscriptionService:        services.SubscriptionService,
+			TrackerService:             services.TrackerService,
 		},
 	}
 }

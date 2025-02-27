@@ -9,7 +9,14 @@ import (
 )
 
 type TrackerServiceImpl struct {
+	// THE TECH DEPT GOES INSANE :cry:
 	TrackerRepository repository.TrackerRepository
+}
+
+func NewTrackerServiceImpl(trackerRepository repository.TrackerRepository) *TrackerServiceImpl {
+	return &TrackerServiceImpl{
+		TrackerRepository: trackerRepository,
+	}
 }
 
 func (service *TrackerServiceImpl) UpdateSteamTrackers(steamId string, steamApiResponse *model.SteamApiResponse) []error {
