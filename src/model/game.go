@@ -25,3 +25,10 @@ func MapGame(rows *sql.Rows) (Game, error) {
 	game.Platform = Platform{ID: platformID}
 	return game, nil
 }
+
+// MatchedDbGameToSteamGameInfo holds the mapping between a database tracked game and a Steam game.
+type MatchedDbGameToSteamGameInfo struct {
+	DbTrack      Subscription
+	SteamApiGame SteamGame
+	Failed       bool
+}

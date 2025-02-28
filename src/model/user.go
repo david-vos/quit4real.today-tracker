@@ -1,6 +1,8 @@
 package model
 
-import "database/sql"
+import (
+	"database/sql"
+)
 
 type User struct {
 	ID            int    `json:"id"`   // Using string to match the database schema
@@ -17,14 +19,30 @@ type Credentials struct {
 
 func MapUser(rows *sql.Rows) (User, error) {
 	var user User
+	var steamID sql.NullString
+	var steamUserName sql.NullString
+
 	if err := rows.Scan(
 		&user.ID,
 		&user.Name,
 		&user.Password,
-		&user.SteamID,
-		&user.SteamUserName,
+		&steamID,
+		&steamUserName,
 	); err != nil {
 		return User{}, err
 	}
+
+	// Map nullable strings to empty strings
+	user.SteamID = mapNullString(steamID)
+	user.SteamUserName = mapNullString(steamUserName)
+
 	return user, nil
+}
+
+// Helper function to map sql.NullString to a string
+func mapNullString(nullStr sql.NullString) string {
+	if nullStr.Valid {
+		return nullStr.String
+	}
+	return ""
 }

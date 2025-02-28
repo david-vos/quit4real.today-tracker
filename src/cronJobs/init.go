@@ -1,7 +1,7 @@
-package cron
+package cronJobs
 
 type Jobs struct {
-	FailCron *FailCron
+	FailCron *FailCronImpl
 }
 
 func (jobs *Jobs) StartAll() {

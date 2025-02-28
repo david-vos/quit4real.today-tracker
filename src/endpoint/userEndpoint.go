@@ -13,12 +13,15 @@ import (
 )
 
 type UserEndpoint struct {
+	// Legacy code
 	Router                     *mux.Router
-	SteamService               *service.SteamService
-	UserCommandHandler         *command.UserCommandHandler
-	UserQueryHandler           *query.UserQueryHandler
-	SubscriptionCommandHandler *command.SubscriptionCommandHandler
-	AuthService                *service.AuthService
+	UserCommandHandler         *command.UserCommandHandlerImpl
+	UserQueryHandler           *query.UserQueryHandlerImpl
+	SubscriptionCommandHandler *command.SubscriptionCommandHandlerImpl
+	// Services
+	SteamService service.SteamService
+	AuthService  service.AuthService
+	UserService  service.UserService
 }
 
 func (endpoint *UserEndpoint) User() {
@@ -142,7 +145,8 @@ func (endpoint *UserEndpoint) SteamLoginHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		callbackURL := config.BackendUrl() + "/api/auth/steam/callback"
 
-		redirectURL, err := endpoint.AuthService.OpenID.RedirectURL("https://steamcommunity.com/openid", callbackURL, "")
+		openId := endpoint.AuthService.GetOpenId()
+		redirectURL, err := openId.RedirectURL("https://steamcommunity.com/openid", callbackURL, "")
 		if err != nil {
 			http.Error(w, "OpenID Auth error", http.StatusInternalServerError)
 			return
@@ -154,12 +158,13 @@ func (endpoint *UserEndpoint) SteamLoginHandler() http.HandlerFunc {
 
 func (endpoint *UserEndpoint) SteamCallbackHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		fullURL := "https://" + r.Host + r.RequestURI // Use r.RequestURI
-		logger.Info("Full URL: " + fullURL)           // Log the full URL
+		fullURL := "https://" + r.Host + r.RequestURI
+		logger.Info("Full URL: " + fullURL)
 
-		id, err := endpoint.AuthService.OpenID.Verify(fullURL, nil, nil)
+		openId := endpoint.AuthService.GetOpenId()
+		id, err := openId.Verify(fullURL, nil, nil)
 		if err != nil {
-			logger.Fail("Failed to verify OpenID: " + err.Error()) // Log the error
+			logger.Fail("Failed to verify OpenID: " + err.Error())
 			http.Error(w, "Failed to verify OpenID", http.StatusUnauthorized)
 			return
 		}
@@ -185,6 +190,8 @@ func (endpoint *UserEndpoint) SteamCallbackHandler() http.HandlerFunc {
 			return
 		}
 
+		// update the user information to include steam info
+
 		user.SteamUserName = steamUserInfo.PersonaName
 		user.SteamID = steamID
 		err = endpoint.UserCommandHandler.Update(user)
@@ -192,6 +199,9 @@ func (endpoint *UserEndpoint) SteamCallbackHandler() http.HandlerFunc {
 			http.Error(w, "Error updating user", http.StatusInternalServerError)
 			return
 		}
+
+		// Add the trackers for steam to the user
+		endpoint.UserService.CreateUserTrackers(user.SteamID)
 
 		w.Header().Set("Content-Type", "application/json")
 		err = json.NewEncoder(w).Encode(map[string]string{"steamID": steamID})
