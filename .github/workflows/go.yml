@@ -32,18 +32,25 @@ jobs:
         run: |
           go test ./... | tee result.log
           if grep -q "FAIL" result.log; then
-            echo "::set-output name=failed::true"
-            echo "::set-output name=log::$(cat result.log)"
+            echo "failed=true" >> $GITHUB_OUTPUT
+            echo "log<<EOF" >> $GITHUB_OUTPUT
+            cat result.log >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
           else
-            echo "::set-output name=failed::false"
+            echo "failed=false" >> $GITHUB_OUTPUT
           fi
 
       - name: Update PR with test results
         if: steps.run_tests.outputs.failed == 'true'
         run: |
           PR_NUMBER=${{ github.event.pull_request.number }}
-          MESSAGE="Tests failed:\n\`\`\`\n${{ steps.run_tests.outputs.log }}\n\`\`\`"
-          curl -X PATCH -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-          -H "Accept: application/vnd.github.v3+json" \
-          -d "{\"body\": \"$MESSAGE\"}" \
-          "https://api.github.com/repos/${{ github.repository }}/issues/$PR_NUMBER"
+          
+          # Use jq to properly escape the test log for JSON
+          BODY_JSON=$(jq -n --arg log "${{ steps.run_tests.outputs.log }}" '{"body": "Tests failed:\n```\n" + $log + "\n```"}')
+          
+          curl -X PATCH \
+            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            -H "Content-Type: application/json" \
+            -d "$BODY_JSON" \
+            "https://api.github.com/repos/${{ github.repository }}/issues/$PR_NUMBER"
