@@ -1,0 +1,12 @@
+---
+description: Please only write code that conforms existing code style you see in other files in this repository
+globs: 
+alwaysApply: false
+---
+
+# Response
+- Before giving me answers to my questions please look at the format / styling of existing code in this project
+- Please only repsond with the the formats / styling that you've found in the project
+- If you believe that the existing format is bad for the answer you can are trying to give, consider requesting I have the format to what you find better
+- any question I ask is about the code in this project. If you do not know about what part of this project the question is about please ask for more context
+- Only respond in valid and correct go syntax code

@@ -4,7 +4,14 @@ on:
   push:
     branches: [ "main" ]
   pull_request:
+    types: [ "opened", "synchronize", "reopened", "closed" ]
     branches: [ "main" ]
+
+# Add permissions configuration here
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
 
 jobs:
   build:
@@ -15,10 +22,204 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: '1.23'
+          go-version: '1.22'
+
+      - name: Debug environment
+        run: |
+          pwd
+          ls -la
+          echo "GOPATH: $GOPATH"
+          go version
 
       - name: Rename example config
         run: mv config/.example.config.go config/config.go
 
       - name: Build
         run: go build
+
+      - name: Run Tests
+        id: run_tests
+        run: |
+          mkdir -p test-results
+          go test -v ./src/test -json | tee test-results/test-output.json
+          go test -v ./src/test | tee test-results/test-output.log
+          if grep -q "FAIL" test-results/test-output.log; then
+            echo "tests_failed=true" >> $GITHUB_OUTPUT
+            echo "::error::Tests failed! See test details below."
+          else
+            echo "tests_failed=false" >> $GITHUB_OUTPUT
+            echo "::notice::All tests passed!"
+          fi
+          
+      - name: Create annotations for test failures
+        if: steps.run_tests.outputs.tests_failed == 'true' && github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            try {
+              const testOutput = fs.readFileSync('test-results/test-output.json', 'utf8');
+              const lines = testOutput.split('\n').filter(line => line.trim());
+              
+              for (const line of lines) {
+                try {
+                  const event = JSON.parse(line);
+                  
+                  // Handle test failures
+                  if (event.Action === 'fail') {
+                    const testName = event.Test;
+                    
+                    // Try to extract file and line information from the message
+                    let file = null;
+                    let lineNumber = null;
+                    
+                    if (event.Output) {
+                      const matches = event.Output.match(/(\S+\.go):(\d+)/);
+                      if (matches) {
+                        file = matches[1];
+                        lineNumber = parseInt(matches[2], 10);
+                      }
+                    }
+                    
+                    // Create an annotation
+                    const message = `Test failure: ${testName}${event.Output ? '\n' + event.Output : ''}`;
+                    
+                    if (file && lineNumber) {
+                      console.log(`::error file=${file},line=${lineNumber}::${message}`);
+                    } else {
+                      console.log(`::error::${message}`);
+                    }
+                  }
+                } catch (err) {
+                  // Skip invalid JSON lines
+                  continue;
+                }
+              }
+            } catch (err) {
+              console.log(`::warning::Failed to process test output: ${err.message}`);
+            }
+
+      - name: Process Test Results
+        if: always()
+        run: |
+          echo "# Test Results Summary" >> $GITHUB_STEP_SUMMARY
+          
+          # Check if tests failed or passed
+          if grep -q "FAIL" test-results/test-output.log; then
+            echo "## ❌ Some tests failed" >> $GITHUB_STEP_SUMMARY
+            
+            # Extract failed tests
+            echo "### Failed Tests" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            grep -A 3 -- "--- FAIL" test-results/test-output.log >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            
+            # Add detailed error messages
+            echo "### Error Details" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            grep -B 1 -A 3 "Error:" test-results/test-output.log >> $GITHUB_STEP_SUMMARY || echo "No detailed error messages found"
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## ✅ All tests passed" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # Add test duration
+          echo "### Test Duration" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          grep "ok" test-results/test-output.log | grep -v "=== RUN" >> $GITHUB_STEP_SUMMARY || echo "No duration information available"
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          
+          # List all tests
+          echo "### All Tests" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          grep -E "=== RUN|--- PASS|--- FAIL|--- SKIP" test-results/test-output.log >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: test-results/
+          
+      - name: Comment on PR with test results
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const testOutput = fs.readFileSync('test-results/test-output.log', 'utf8');
+            
+            // Check if tests failed
+            const testsFailed = testOutput.includes('FAIL');
+            
+            // Extract failed tests for a more concise comment
+            let failedTests = '';
+            if (testsFailed) {
+              const lines = testOutput.split('\n');
+              for (let i = 0; i < lines.length; i++) {
+                if (lines[i].includes('--- FAIL')) {
+                  failedTests += lines[i] + '\n';
+                  // Include a few lines after the FAIL line to show the error
+                  for (let j = 1; j <= 5 && i + j < lines.length; j++) {
+                    if (lines[i + j].trim().length > 0) {
+                      failedTests += lines[i + j] + '\n';
+                    }
+                  }
+                  failedTests += '\n';
+                }
+              }
+            }
+            
+            // Create the comment body
+            let body = '## Go Test Results\n\n';
+            
+            if (testsFailed) {
+              body += '### ❌ Some tests failed!\n\n';
+              body += '```\n' + failedTests + '```\n\n';
+              body += `See the [workflow run](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}) for complete details.\n`;
+            } else {
+              body += '### ✅ All tests passed!\n\n';
+              
+              // Extract test duration
+              const durationMatch = testOutput.match(/ok\s+quit4real\.today\/src\/test\s+([\d\.]+)s/);
+              const duration = durationMatch ? durationMatch[1] + 's' : 'unknown duration';
+              
+              body += `Tests completed successfully in ${duration}.\n`;
+            }
+            
+            // Get existing comments to avoid duplicates
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+            
+            // Look for an existing comment from the bot
+            const botComment = comments.find(comment => 
+              comment.user.login === 'github-actions[bot]' && 
+              comment.body.includes('Go Test Results')
+            );
+            
+            if (botComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: body
+              });
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: body
+              });
+            }
+
+      - name: Show test output
+        if: always()
+        run: cat test-results/test-output.log
