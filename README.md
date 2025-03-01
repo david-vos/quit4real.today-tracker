@@ -17,7 +17,7 @@ go run quit4real.today
 just do `docker compose up --build -d` 
 
 # Desgin
-![image](https://github.com/user-attachments/assets/feb3cd1e-f3c5-44a3-9c7e-02f5e3143b3f)
+![image](https://github.com/user-attachments/assets/306bab47-b1e1-4190-8939-6f9bc8f32799)
 This is the idea behind it.
 
 Endpoints can only talk to Services.
