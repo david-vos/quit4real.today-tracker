@@ -7,6 +7,12 @@ on:
     types: [ "opened", "synchronize", "reopened", "closed" ]
     branches: [ "main" ]
 
+# Add permissions configuration here
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
