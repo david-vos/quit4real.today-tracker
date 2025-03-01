@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -48,8 +49,8 @@ func setup() {
 		log.Fatalf("Failed to open test database: %v", err)
 	}
 
-	// Use the actual path to the migrations directory
-	migrationsPath := "/Users/vos/dev/quit4real.today-tracker/src/db/migrations"
+	// Use a relative path to the migrations directory that will work both locally and in CI
+	migrationsPath := getDynamicMigrationsPath()
 	log.Printf("Using migrations path: %s", migrationsPath)
 
 	// Initialize the database schema
@@ -88,7 +89,7 @@ func setupMockSteamAPI() {
 
 		// Parse the URL to determine which API endpoint is being called
 		if strings.Contains(r.URL.Path, "/ISteamUser/ResolveVanityURL") {
-			// Mock response for resolving vanity URL
+			// Always return success regardless of authentication
 			vanityResponse := model.SteamApiVanityResponse{
 				Response: model.SteamApiVanity{
 					SteamId: "76561198012345678",
@@ -282,4 +283,39 @@ func makeRequest(method, path string, body []byte, headers map[string]string) (*
 	// Make the request
 	client := &http.Client{}
 	return client.Do(req)
+}
+
+// getDynamicMigrationsPath returns a path to the migrations directory that works in any environment
+func getDynamicMigrationsPath() string {
+	// First try the current directory
+	if _, err := os.Stat("src/db/migrations"); err == nil {
+		return "src/db/migrations"
+	}
+
+	// Then try parent directory (in case we're running from the src/test directory)
+	if _, err := os.Stat("../db/migrations"); err == nil {
+		return "../db/migrations"
+	}
+
+	// As a fallback, try the absolute path (useful for local development)
+	workDir, err := os.Getwd()
+	if err != nil {
+		log.Printf("Warning: couldn't get working directory: %v", err)
+		return "src/db/migrations" // Default to the relative path
+	}
+
+	// Check if we're in the root directory or a subdirectory
+	possiblePaths := []string{
+		filepath.Join(workDir, "src/db/migrations"),
+		filepath.Join(workDir, "../db/migrations"),
+	}
+
+	for _, path := range possiblePaths {
+		if _, err := os.Stat(path); err == nil {
+			return path
+		}
+	}
+
+	// If all else fails, return the basic path and let it fail with a clear error
+	return "src/db/migrations"
 }
