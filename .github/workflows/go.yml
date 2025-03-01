@@ -4,6 +4,7 @@ on:
   push:
     branches: [ "main" ]
   pull_request:
+    types: [ "closed" ]
     branches: [ "main" ]
 
 jobs:
@@ -22,3 +23,24 @@ jobs:
 
       - name: Build
         run: go build
+
+      - name: Run Tests
+        id: run_tests
+        run: |
+          go test ./... | tee result.log
+          if grep -q "FAIL" result.log; then
+            echo "::set-output name=failed::true"
+            echo "::set-output name=log::$(cat result.log)"
+          else
+            echo "::set-output name=failed::false"
+          fi
+
+      - name: Update PR with test results
+        if: steps.run_tests.outputs.failed == 'true'
+        run: |
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          MESSAGE="Tests failed:\n\`\`\`\n${{ steps.run_tests.outputs.log }}\n\`\`\`"
+          curl -X PATCH -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          -H "Accept: application/vnd.github.v3+json" \
+          -d "{\"body\": \"$MESSAGE\"}" \
+          "https://api.github.com/repos/${{ github.repository }}/issues/$PR_NUMBER"
