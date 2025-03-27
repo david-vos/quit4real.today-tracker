@@ -1,3 +1,6 @@
+# PAUSED
+I have to think about GDRP laws and how much I actually want to deal with the stuff I don't like to develop.
+
 # Quit4Real.today
 This project is the backend for https://Quit4Real.today
 The goal is simple. Track a user to see *If* they play a game they said they would not.
